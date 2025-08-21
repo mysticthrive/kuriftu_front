@@ -247,7 +247,7 @@ export default function Sidebar() {
     const isActive = pathname === item.href || (item.children && item.children.some(child => pathname === child.href));
 
     return (
-      <div key={item.id}>
+      <div key={item.id} className="relative group">
         {item.href ? (
           <Link href={item.href}>
             <div className={`flex items-center px-4 py-2 rounded-lg cursor-pointer transition-colors ${
@@ -297,6 +297,38 @@ export default function Sidebar() {
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Collapsed Submenu Popup */}
+        {collapsed && hasChildren && (
+          <div className="absolute left-full top-0 ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-lg py-2 min-w-48">
+              <div className="px-3 py-2 border-b border-gray-100">
+                <div className="flex items-center">
+                  <IconComponent className="w-4 h-4 mr-2 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-900">{item.label}</span>
+                </div>
+              </div>
+              <div className="space-y-1">
+                {item.children?.map(child => {
+                  const ChildIconComponent = getIconComponent(child.icon);
+                  const isChildActive = pathname === child.href;
+                  return (
+                    <Link key={child.id} href={child.href || '#'} onClick={() => handleSubmenuClick(item.id)}>
+                      <div className={`flex items-center px-3 py-2 cursor-pointer transition-colors ${
+                        isChildActive 
+                          ? 'bg-green-50 text-green-700' 
+                          : 'text-gray-700 hover:bg-gray-50'
+                      }`}>
+                        <ChildIconComponent className="w-4 h-4 mr-3" />
+                        <span className="text-sm">{child.label}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
       </div>
