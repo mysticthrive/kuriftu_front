@@ -313,7 +313,7 @@ export default function Sidebar() {
 
         {/* Collapsed Submenu Popup */}
         {collapsed && hasChildren && (
-          <div className="absolute left-full top-0 ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+          <div className="absolute left-full top-0 ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[9999] hover:opacity-100 hover:visible">
             <div className="bg-white border border-gray-200 rounded-lg shadow-lg py-2 min-w-48">
               <div className="px-3 py-2 border-b border-gray-100">
                 <div className="flex items-center">
@@ -347,7 +347,7 @@ export default function Sidebar() {
   };
 
   return (
-    <div className={`bg-gray-50 shadow-lg transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`}>
+    <div className={`bg-gray-50 shadow-lg transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'} ${collapsed ? 'overflow-visible' : 'overflow-hidden'}`}>
       <div className="flex flex-col h-full">
         {/* Logo Section */}
         <div className={`${collapsed ? 'p-2' : 'p-4'} border-b border-gray-200`}>
@@ -470,7 +470,7 @@ export default function Sidebar() {
         )}
 
         {/* Navigation Menu */}
-        <div className={`flex-1 ${collapsed ? 'overflow-hidden' : 'overflow-y-auto'} py-4`}>
+        <div className={`flex-1 ${collapsed ? 'overflow-visible' : 'overflow-y-auto'} py-4`}>
           <div className={`${collapsed ? 'space-y-2' : 'space-y-6'}`}>
             {menuSections.map((section, index) => {
               const isSectionCollapsed = collapsedSections.includes(section.title);
