@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { authenticatedGet, authenticatedPost, authenticatedPut, authenticatedDelete } from './authenticatedApi';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -38,8 +38,7 @@ export interface ApiResponse<T> {
 // GET all rooms
 export const getRooms = async (): Promise<ApiResponse<Room[]>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/rooms`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<Room[]>>('/rooms');
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to fetch rooms');
   }
@@ -48,8 +47,7 @@ export const getRooms = async (): Promise<ApiResponse<Room[]>> => {
 // GET room by ID
 export const getRoomById = async (id: number): Promise<ApiResponse<Room>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/rooms/${id}`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<Room>>(`/rooms/${id}`);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to fetch room');
   }
@@ -58,8 +56,7 @@ export const getRoomById = async (id: number): Promise<ApiResponse<Room>> => {
 // GET rooms by hotel
 export const getRoomsByHotel = async (hotel: string): Promise<ApiResponse<Room[]>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/rooms/hotel/${hotel}`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<Room[]>>(`/rooms/hotel/${hotel}`);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to fetch rooms by hotel');
   }
@@ -68,8 +65,7 @@ export const getRoomsByHotel = async (hotel: string): Promise<ApiResponse<Room[]
 // GET available rooms
 export const getAvailableRooms = async (): Promise<ApiResponse<Room[]>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/rooms/status/available`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<Room[]>>('/rooms/status/available');
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to fetch available rooms');
   }
@@ -78,8 +74,7 @@ export const getAvailableRooms = async (): Promise<ApiResponse<Room[]>> => {
 // POST create new room
 export const createRoom = async (data: CreateRoomData): Promise<ApiResponse<Room>> => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/rooms`, data);
-    return response.data;
+    return await authenticatedPost<ApiResponse<Room>>('/rooms', data);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to create room');
   }
@@ -88,8 +83,7 @@ export const createRoom = async (data: CreateRoomData): Promise<ApiResponse<Room
 // PUT update room
 export const updateRoom = async (id: number, data: UpdateRoomData): Promise<ApiResponse<Room>> => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/rooms/${id}`, data);
-    return response.data;
+    return await authenticatedPut<ApiResponse<Room>>(`/rooms/${id}`, data);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to update room');
   }
@@ -98,8 +92,7 @@ export const updateRoom = async (id: number, data: UpdateRoomData): Promise<ApiR
 // DELETE room
 export const deleteRoom = async (id: number): Promise<ApiResponse<void>> => {
   try {
-    const response = await axios.delete(`${API_BASE_URL}/rooms/${id}`);
-    return response.data;
+    return await authenticatedDelete<ApiResponse<void>>(`/rooms/${id}`);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to delete room');
   }

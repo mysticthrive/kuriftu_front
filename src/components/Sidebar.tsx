@@ -84,7 +84,7 @@ export default function Sidebar() {
             { id: 'rooms', label: 'Rooms', icon: 'Bed', href: '/rooms' },
           ] 
         },
-                 { id: 'manage-staff', label: 'Manage Staff', icon: 'Users', children: [] },
+                //  { id: 'manage-staff', label: 'Manage Staff', icon: 'Users', children: [] },
          { id: 'manage-guests', label: 'Manage Guests', icon: 'User', href: '/guests' },
         // { id: 'promotions', label: 'Promotions', icon: 'Rocket', href: '/promotions' }
       ],

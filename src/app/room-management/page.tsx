@@ -23,21 +23,10 @@ import {
 } from 'lucide-react';
 import { getRoomGroups } from '@/lib/api/roomGroups';
 import { getRoomTypes } from '@/lib/api/roomTypes';
+import { getRoomGroupRoomTypes, bulkAssignRoomTypes, deleteRoomGroupRoomType } from '@/lib/api/roomGroupRoomTypes';
 import { RoomGroup } from '@/lib/api/roomGroups';
 import { RoomType } from '@/lib/api/roomTypes';
-
-interface RoomGroupRoomType {
-  id: number;
-  room_group_id: number;
-  room_type_id: number;
-  created_at: string;
-  updated_at: string;
-  group_name: string;
-  group_description?: string;
-  type_name: string;
-  type_description?: string;
-  max_occupancy: number;
-}
+import { RoomGroupRoomType } from '@/lib/api/roomGroupRoomTypes';
 
 export default function RoomManagementPage() {
   const { user, loading } = useAuth();
@@ -72,7 +61,7 @@ export default function RoomManagementPage() {
       const [roomGroupsRes, roomTypesRes, relationshipsRes] = await Promise.all([
         getRoomGroups(),
         getRoomTypes(),
-        fetch('/api/room-group-room-types').then(res => res.json())
+        getRoomGroupRoomTypes()
       ]);
       
       if (roomGroupsRes.success && roomGroupsRes.data) {
@@ -100,27 +89,19 @@ export default function RoomManagementPage() {
 
     try {
       setSubmitting(true);
-      const response = await fetch('/api/room-group-room-types/bulk-assign', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          room_group_id: selectedRoomGroup,
-          room_type_ids: assigningRoomTypes
-        })
+      const result = await bulkAssignRoomTypes({
+        room_group_id: selectedRoomGroup,
+        room_type_ids: assigningRoomTypes
       });
-
-      const result = await response.json();
       
       if (result.success) {
-        toast.success(result.message);
+        toast.success(result.message || 'Room types assigned successfully');
         setShowAssignModal(false);
         setSelectedRoomGroup(null);
         setAssigningRoomTypes([]);
         fetchData(); // Refresh data
       } else {
-        toast.error(result.message);
+        toast.error(result.message || 'Failed to assign room types');
       }
     } catch (error: any) {
       console.error('Error assigning room types:', error);
@@ -136,17 +117,13 @@ export default function RoomManagementPage() {
     }
 
     try {
-      const response = await fetch(`/api/room-group-room-types/${relationshipId}`, {
-        method: 'DELETE'
-      });
-
-      const result = await response.json();
+      const result = await deleteRoomGroupRoomType(relationshipId);
       
       if (result.success) {
-        toast.success(result.message);
+        toast.success(result.message || 'Relationship removed successfully');
         fetchData(); // Refresh data
       } else {
-        toast.error(result.message);
+        toast.error(result.message || 'Failed to remove relationship');
       }
     } catch (error: any) {
       console.error('Error removing relationship:', error);

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { authenticatedGet, authenticatedPost, authenticatedPut, authenticatedDelete } from './authenticatedApi';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -29,8 +29,7 @@ export interface ApiResponse<T> {
 // Get all room groups
 export const getRoomGroups = async (): Promise<ApiResponse<RoomGroup[]>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/room-groups`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<RoomGroup[]>>('/room-groups');
   } catch (error: any) {
     console.error('Error fetching room groups:', error);
     throw error;
@@ -40,8 +39,7 @@ export const getRoomGroups = async (): Promise<ApiResponse<RoomGroup[]>> => {
 // Get single room group by ID
 export const getRoomGroup = async (id: number): Promise<ApiResponse<RoomGroup>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/room-groups/${id}`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<RoomGroup>>(`/room-groups/${id}`);
   } catch (error: any) {
     console.error('Error fetching room group:', error);
     throw error;
@@ -51,8 +49,7 @@ export const getRoomGroup = async (id: number): Promise<ApiResponse<RoomGroup>> 
 // Create new room group
 export const createRoomGroup = async (data: CreateRoomGroupData): Promise<ApiResponse<RoomGroup>> => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/room-groups`, data);
-    return response.data;
+    return await authenticatedPost<ApiResponse<RoomGroup>>('/room-groups', data);
   } catch (error: any) {
     console.error('Error creating room group:', error);
     throw error;
@@ -62,8 +59,7 @@ export const createRoomGroup = async (data: CreateRoomGroupData): Promise<ApiRes
 // Update room group
 export const updateRoomGroup = async (id: number, data: UpdateRoomGroupData): Promise<ApiResponse<RoomGroup>> => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/room-groups/${id}`, data);
-    return response.data;
+    return await authenticatedPut<ApiResponse<RoomGroup>>(`/room-groups/${id}`, data);
   } catch (error: any) {
     console.error('Error updating room group:', error);
     throw error;
@@ -73,8 +69,7 @@ export const updateRoomGroup = async (id: number, data: UpdateRoomGroupData): Pr
 // Delete room group
 export const deleteRoomGroup = async (id: number): Promise<ApiResponse<void>> => {
   try {
-    const response = await axios.delete(`${API_BASE_URL}/room-groups/${id}`);
-    return response.data;
+    return await authenticatedDelete<ApiResponse<void>>(`/room-groups/${id}`);
   } catch (error: any) {
     console.error('Error deleting room group:', error);
     throw error;

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { authenticatedGet, authenticatedPost, authenticatedPut, authenticatedDelete } from './authenticatedApi';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -87,8 +87,7 @@ export interface ApiResponse<T> {
 // Get all reservations
 export const getReservations = async (): Promise<ApiResponse<Reservation[]>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/reservations`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<Reservation[]>>('/reservations');
   } catch (error: any) {
     console.error('Error fetching reservations:', error);
     throw error;
@@ -98,8 +97,7 @@ export const getReservations = async (): Promise<ApiResponse<Reservation[]>> => 
 // Get single reservation by ID
 export const getReservation = async (id: number): Promise<ApiResponse<Reservation>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/reservations/${id}`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<Reservation>>(`/reservations/${id}`);
   } catch (error: any) {
     console.error('Error fetching reservation:', error);
     throw error;
@@ -109,8 +107,7 @@ export const getReservation = async (id: number): Promise<ApiResponse<Reservatio
 // Create new reservation
 export const createReservation = async (data: CreateReservationData): Promise<ApiResponse<Reservation>> => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/reservations`, data);
-    return response.data;
+    return await authenticatedPost<ApiResponse<Reservation>>('/reservations', data);
   } catch (error: any) {
     console.error('Error creating reservation:', error);
     throw error;
@@ -120,8 +117,7 @@ export const createReservation = async (data: CreateReservationData): Promise<Ap
 // Update reservation
 export const updateReservation = async (id: number, data: UpdateReservationData): Promise<ApiResponse<Reservation>> => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/reservations/${id}`, data);
-    return response.data;
+    return await authenticatedPut<ApiResponse<Reservation>>(`/reservations/${id}`, data);
   } catch (error: any) {
     console.error('Error updating reservation:', error);
     throw error;
@@ -131,8 +127,7 @@ export const updateReservation = async (id: number, data: UpdateReservationData)
 // Delete reservation (soft delete)
 export const deleteReservation = async (id: number): Promise<ApiResponse<void>> => {
   try {
-    const response = await axios.delete(`${API_BASE_URL}/reservations/${id}`);
-    return response.data;
+    return await authenticatedDelete<ApiResponse<void>>(`/reservations/${id}`);
   } catch (error: any) {
     console.error('Error deleting reservation:', error);
     throw error;
@@ -142,8 +137,7 @@ export const deleteReservation = async (id: number): Promise<ApiResponse<void>> 
 // Get rooms list for dropdown
 export const getRoomsList = async (): Promise<ApiResponse<Room[]>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/reservations/rooms/list`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<Room[]>>('/reservations/rooms/list');
   } catch (error: any) {
     console.error('Error fetching rooms list:', error);
     throw error;

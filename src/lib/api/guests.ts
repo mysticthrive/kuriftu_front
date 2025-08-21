@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { authenticatedGet, authenticatedPost, authenticatedPut, authenticatedDelete } from './authenticatedApi';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -54,8 +54,7 @@ export interface ApiResponse<T> {
 // Get all guests
 export const getGuests = async (): Promise<ApiResponse<Guest[]>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/guests`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<Guest[]>>('/guests');
   } catch (error: any) {
     console.error('Error fetching guests:', error);
     throw error;
@@ -65,8 +64,7 @@ export const getGuests = async (): Promise<ApiResponse<Guest[]>> => {
 // Get single guest by ID
 export const getGuest = async (id: number): Promise<ApiResponse<Guest>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/guests/${id}`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<Guest>>(`/guests/${id}`);
   } catch (error: any) {
     console.error('Error fetching guest:', error);
     throw error;
@@ -76,8 +74,7 @@ export const getGuest = async (id: number): Promise<ApiResponse<Guest>> => {
 // Create new guest
 export const createGuest = async (data: CreateGuestData): Promise<ApiResponse<Guest>> => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/guests`, data);
-    return response.data;
+    return await authenticatedPost<ApiResponse<Guest>>('/guests', data);
   } catch (error: any) {
     console.error('Error creating guest:', error);
     throw error;
@@ -87,8 +84,7 @@ export const createGuest = async (data: CreateGuestData): Promise<ApiResponse<Gu
 // Update guest
 export const updateGuest = async (id: number, data: UpdateGuestData): Promise<ApiResponse<Guest>> => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/guests/${id}`, data);
-    return response.data;
+    return await authenticatedPut<ApiResponse<Guest>>(`/guests/${id}`, data);
   } catch (error: any) {
     console.error('Error updating guest:', error);
     throw error;
@@ -98,8 +94,7 @@ export const updateGuest = async (id: number, data: UpdateGuestData): Promise<Ap
 // Delete guest
 export const deleteGuest = async (id: number): Promise<ApiResponse<void>> => {
   try {
-    const response = await axios.delete(`${API_BASE_URL}/guests/${id}`);
-    return response.data;
+    return await authenticatedDelete<ApiResponse<void>>(`/guests/${id}`);
   } catch (error: any) {
     console.error('Error deleting guest:', error);
     throw error;

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { authenticatedGet, authenticatedPost, authenticatedPut, authenticatedDelete } from './authenticatedApi';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -37,8 +37,7 @@ export interface ApiResponse<T> {
 // GET all room type images
 export const getRoomTypeImages = async (): Promise<ApiResponse<RoomTypeImage[]>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/room-type-images`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<RoomTypeImage[]>>('/room-type-images');
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to fetch room type images');
   }
@@ -52,13 +51,12 @@ export const createRoomTypeImageWithFile = async (data: CreateRoomTypeImageWithF
     const imageUrl = await uploadImageToCloudinary(data.image_file);
     
     // Then save the URL to the database
-    const response = await axios.post(`${API_BASE_URL}/room-type-images/upload`, {
+    return await authenticatedPost<ApiResponse<RoomTypeImage>>('/room-type-images/upload', {
       room_group_room_type_id: data.room_group_room_type_id,
       image_url: imageUrl,
       alt_text: data.alt_text,
       is_primary: data.is_primary
     });
-    return response.data;
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to create room type image');
   }
@@ -85,8 +83,7 @@ export const updateRoomTypeImageWithFile = async (id: number, data: UpdateRoomTy
       updateData.image_url = imageUrl;
     }
     
-    const response = await axios.put(`${API_BASE_URL}/room-type-images/${id}/upload`, updateData);
-    return response.data;
+    return await authenticatedPut<ApiResponse<RoomTypeImage>>(`/room-type-images/${id}/upload`, updateData);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to update room type image');
   }
@@ -95,8 +92,7 @@ export const updateRoomTypeImageWithFile = async (id: number, data: UpdateRoomTy
 // PUT set image as primary
 export const setImageAsPrimary = async (id: number): Promise<ApiResponse<void>> => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/room-type-images/${id}/set-primary`);
-    return response.data;
+    return await authenticatedPut<ApiResponse<void>>(`/room-type-images/${id}/set-primary`);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to set image as primary');
   }
@@ -105,8 +101,7 @@ export const setImageAsPrimary = async (id: number): Promise<ApiResponse<void>> 
 // DELETE room type image
 export const deleteRoomTypeImage = async (id: number): Promise<ApiResponse<void>> => {
   try {
-    const response = await axios.delete(`${API_BASE_URL}/room-type-images/${id}`);
-    return response.data;
+    return await authenticatedDelete<ApiResponse<void>>(`/room-type-images/${id}`);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to delete room type image');
   }

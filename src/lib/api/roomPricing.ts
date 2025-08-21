@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { authenticatedGet, authenticatedPost, authenticatedPut, authenticatedDelete } from './authenticatedApi';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -43,8 +43,7 @@ export interface ApiResponse<T> {
 // GET all room pricing
 export const getRoomPricing = async (): Promise<ApiResponse<RoomPricing[]>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/room-pricing`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<RoomPricing[]>>('/room-pricing');
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to fetch room pricing');
   }
@@ -53,8 +52,7 @@ export const getRoomPricing = async (): Promise<ApiResponse<RoomPricing[]>> => {
 // GET room pricing by ID
 export const getRoomPricingById = async (id: number): Promise<ApiResponse<RoomPricing>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/room-pricing/${id}`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<RoomPricing>>(`/room-pricing/${id}`);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to fetch room pricing');
   }
@@ -63,8 +61,7 @@ export const getRoomPricingById = async (id: number): Promise<ApiResponse<RoomPr
 // GET pricing by room group room type ID
 export const getRoomPricingByRelationship = async (relationshipId: number): Promise<ApiResponse<RoomPricing[]>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/room-pricing/relationship/${relationshipId}`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<RoomPricing[]>>(`/room-pricing/relationship/${relationshipId}`);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to fetch room pricing by relationship');
   }
@@ -73,8 +70,7 @@ export const getRoomPricingByRelationship = async (relationshipId: number): Prom
 // GET pricing by hotel
 export const getRoomPricingByHotel = async (hotel: string): Promise<ApiResponse<RoomPricing[]>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/room-pricing/hotel/${hotel}`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<RoomPricing[]>>(`/room-pricing/hotel/${hotel}`);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to fetch room pricing by hotel');
   }
@@ -83,8 +79,7 @@ export const getRoomPricingByHotel = async (hotel: string): Promise<ApiResponse<
 // GET pricing by occupancy
 export const getRoomPricingByOccupancy = async (occupancy: string): Promise<ApiResponse<RoomPricing[]>> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/room-pricing/occupancy/${occupancy}`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<RoomPricing[]>>(`/room-pricing/occupancy/${occupancy}`);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to fetch room pricing by occupancy');
   }
@@ -93,8 +88,7 @@ export const getRoomPricingByOccupancy = async (occupancy: string): Promise<ApiR
 // POST create new room pricing
 export const createRoomPricing = async (data: CreateRoomPricingData): Promise<ApiResponse<RoomPricing>> => {
   try {
-    const response = await axios.post(`${API_BASE_URL}/room-pricing`, data);
-    return response.data;
+    return await authenticatedPost<ApiResponse<RoomPricing>>('/room-pricing', data);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to create room pricing');
   }
@@ -103,8 +97,7 @@ export const createRoomPricing = async (data: CreateRoomPricingData): Promise<Ap
 // PUT update room pricing
 export const updateRoomPricing = async (id: number, data: UpdateRoomPricingData): Promise<ApiResponse<RoomPricing>> => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/room-pricing/${id}`, data);
-    return response.data;
+    return await authenticatedPut<ApiResponse<RoomPricing>>(`/room-pricing/${id}`, data);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to update room pricing');
   }
@@ -113,8 +106,7 @@ export const updateRoomPricing = async (id: number, data: UpdateRoomPricingData)
 // DELETE room pricing
 export const deleteRoomPricing = async (id: number): Promise<ApiResponse<void>> => {
   try {
-    const response = await axios.delete(`${API_BASE_URL}/room-pricing/${id}`);
-    return response.data;
+    return await authenticatedDelete<ApiResponse<void>>(`/room-pricing/${id}`);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to delete room pricing');
   }
@@ -138,8 +130,7 @@ export const getRoomPricingWithFilters = async (filters: {
       }
     });
     
-    const response = await axios.get(`${API_BASE_URL}/room-pricing/filter?${queryParams.toString()}`);
-    return response.data;
+    return await authenticatedGet<ApiResponse<RoomPricing[]>>(`/room-pricing/filter?${queryParams.toString()}`);
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to fetch room pricing with filters');
   }
