@@ -26,7 +26,7 @@ import {
 import { getRooms, createRoom, updateRoom, deleteRoom, Room, CreateRoomData } from '@/lib/api/rooms';
 import { getRoomGroups } from '@/lib/api/roomGroups';
 import { getRoomTypes } from '@/lib/api/roomTypes';
-import { getPrimaryRoomTypeImages, RoomTypeImage } from '@/lib/api/roomTypeImages';
+import { getRoomTypeImages, RoomTypeImage } from '@/lib/api/roomTypeImages';
 import { getRoomPricing, RoomPricing } from '@/lib/api/roomPricing';
 import { RoomGroup } from '@/lib/api/roomGroups';
 import { RoomType } from '@/lib/api/roomTypes';
@@ -98,7 +98,7 @@ export default function RoomsPage() {
         getRooms(),
         getRoomGroups(),
         getRoomTypes(),
-        getPrimaryRoomTypeImages(),
+        getRoomTypeImages(),
         getRoomPricing()
       ]);
       

@@ -159,8 +159,17 @@ export default function RoomPricingPage() {
     try {
       setSubmitting(true);
       
+      // Prepare data for API - convert empty strings to undefined for optional fields
+      const apiData = {
+        ...formData,
+        start_date: formData.start_date || undefined,
+        end_date: formData.end_date || undefined,
+        day_of_week: formData.day_of_week || undefined,
+        month: formData.month || undefined
+      };
+      
       if (editingPricing) {
-        const response = await updateRoomPricing(editingPricing.pricing_id, formData);
+        const response = await updateRoomPricing(editingPricing.pricing_id, apiData);
         if (response.success) {
           toast.success('Pricing updated successfully');
           setShowModal(false);
@@ -169,7 +178,7 @@ export default function RoomPricingPage() {
           fetchData();
         }
       } else {
-        const response = await createRoomPricing(formData);
+        const response = await createRoomPricing(apiData);
         if (response.success) {
           toast.success('Pricing added successfully');
           setShowModal(false);
