@@ -24,6 +24,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { getRoomTypeImages, createRoomTypeImageWithFile, updateRoomTypeImageWithFile, deleteRoomTypeImage, setImageAsPrimary, RoomTypeImage, CreateRoomTypeImageWithFileData, UpdateRoomTypeImageWithFileData } from '@/lib/api/roomTypeImages';
+import { getRoomGroupRoomTypes } from '@/lib/api/roomGroupRoomTypes';
 import Pagination from '@/components/Pagination';
 
 export default function RoomTypeImagesPage() {
@@ -72,7 +73,7 @@ export default function RoomTypeImagesPage() {
       setLoadingData(true);
       const [imagesRes, relationshipsRes] = await Promise.all([
         getRoomTypeImages(),
-        fetch('/api/room-group-room-types').then(res => res.json())
+        getRoomGroupRoomTypes()
       ]);
       
       if (imagesRes.success && imagesRes.data) {

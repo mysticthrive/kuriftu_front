@@ -34,6 +34,7 @@ import {
   RoomPricing, 
   CreateRoomPricingData 
 } from '@/lib/api/roomPricing';
+import { getRoomGroupRoomTypes } from '@/lib/api/roomGroupRoomTypes';
 import Pagination from '@/components/Pagination';
 
 export default function RoomPricingPage() {
@@ -126,7 +127,7 @@ export default function RoomPricingPage() {
       setLoadingData(true);
       const [pricingRes, relationshipsRes] = await Promise.all([
         getRoomPricing(),
-        fetch('/api/room-group-room-types').then(res => res.json())
+        getRoomGroupRoomTypes()
       ]);
       
       if (pricingRes.success && pricingRes.data) {
