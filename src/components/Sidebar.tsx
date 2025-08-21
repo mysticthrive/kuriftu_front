@@ -250,19 +250,27 @@ export default function Sidebar() {
       <div key={item.id} className="relative group">
         {item.href ? (
           <Link href={item.href}>
-            <div className={`flex items-center px-4 py-2 rounded-lg cursor-pointer transition-colors ${
+            <div className={`flex items-center ${collapsed ? 'px-2 py-2' : 'px-4 py-2'} rounded-lg cursor-pointer transition-colors relative group ${
               isActive 
                 ? 'bg-white text-green-700 shadow-sm border border-gray-200' 
                 : 'text-gray-700 hover:bg-green-50 hover:text-green-700'
             }`}>
-              <IconComponent className="w-5 h-5 mr-3" />
+              <IconComponent className={`w-5 h-5 ${collapsed ? 'mr-0' : 'mr-3'}`} />
               {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
+              {/* Tooltip for collapsed state */}
+              {collapsed && (
+                <div className="absolute left-full top-0 ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                    {item.label}
+                  </div>
+                </div>
+              )}
             </div>
           </Link>
         ) : (
           <div>
             <div 
-              className={`flex items-center justify-between px-4 py-2 rounded-lg cursor-pointer transition-colors ${
+              className={`flex items-center justify-between ${collapsed ? 'px-2 py-2' : 'px-4 py-2'} rounded-lg cursor-pointer transition-colors ${
                 isActive 
                   ? 'bg-white text-green-700 shadow-sm border border-gray-200' 
                   : 'text-gray-700 hover:bg-green-50 hover:text-green-700'
@@ -270,11 +278,14 @@ export default function Sidebar() {
               onClick={() => toggleItem(item.id)}
             >
               <div className="flex items-center">
-                <IconComponent className="w-5 h-5 mr-3" />
+                <IconComponent className={`w-5 h-5 ${collapsed ? 'mr-0' : 'mr-3'}`} />
                 {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
               </div>
               {!collapsed && hasChildren && (
                 <ChevronDown className={`w-4 h-4 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+              )}
+              {collapsed && hasChildren && (
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               )}
             </div>
             {!collapsed && isExpanded && hasChildren && (
@@ -339,7 +350,7 @@ export default function Sidebar() {
     <div className={`bg-gray-50 shadow-lg transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'}`}>
       <div className="flex flex-col h-full">
         {/* Logo Section */}
-        <div className="p-4 border-b border-gray-200">
+        <div className={`${collapsed ? 'p-2' : 'p-4'} border-b border-gray-200`}>
           {!collapsed ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -441,20 +452,26 @@ export default function Sidebar() {
             </div>
           </div>
         ) : (
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-center">
+          <div className="p-2 border-b border-gray-200">
+            <div className="flex items-center justify-center relative group">
               <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
                 <span className="text-white font-bold text-sm">
                   {getCurrentHotel()?.label.charAt(0) || 'H'}
                 </span>
+              </div>
+              {/* Hotel Tooltip */}
+              <div className="absolute left-full top-0 ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                  {getCurrentHotel()?.label}
+                </div>
               </div>
             </div>
           </div>
         )}
 
         {/* Navigation Menu */}
-        <div className="flex-1 overflow-y-auto py-4">
-          <div className="space-y-6">
+        <div className={`flex-1 ${collapsed ? 'overflow-hidden' : 'overflow-y-auto'} py-4`}>
+          <div className={`${collapsed ? 'space-y-2' : 'space-y-6'}`}>
             {menuSections.map((section, index) => {
               const isSectionCollapsed = collapsedSections.includes(section.title);
               const hasItems = section.items.length > 0;
@@ -483,7 +500,7 @@ export default function Sidebar() {
                     </div>
                   )}
                   {(!section.collapsible || !isSectionCollapsed) && (
-                    <div className="space-y-1">
+                    <div className={`${collapsed ? 'space-y-1' : 'space-y-1'}`}>
                       {section.items.map(renderMenuItem)}
                     </div>
                   )}
@@ -494,7 +511,7 @@ export default function Sidebar() {
         </div>
 
         {/* Bottom Section */}
-        <div className="border-t border-gray-200 p-4 space-y-4">
+        <div className={`border-t border-gray-200 ${collapsed ? 'p-2' : 'p-4'} space-y-4`}>
           {/* Notifications */}
           {/* {!collapsed && (
             <div className="flex items-center px-2 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md cursor-pointer transition-colors">
@@ -517,7 +534,7 @@ export default function Sidebar() {
           {/* User Profile */}
           <div className="relative" ref={userDropdownRef}>
             <div 
-              className="flex items-center px-2 py-2 cursor-pointer hover:bg-gray-50 rounded-md transition-colors"
+              className="flex items-center px-2 py-2 cursor-pointer hover:bg-gray-50 rounded-md transition-colors relative group"
               onClick={handleUserDropdownToggle}
             >
               <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
@@ -533,6 +550,14 @@ export default function Sidebar() {
               )}
               {!collapsed && (
                 <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
+              )}
+              {/* User Tooltip for collapsed state */}
+              {collapsed && (
+                <div className="absolute left-full top-0 ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                    {user?.name || 'User'}
+                  </div>
+                </div>
               )}
             </div>
 
