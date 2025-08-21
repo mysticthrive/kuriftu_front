@@ -23,7 +23,7 @@ import {
   Link,
   ExternalLink
 } from 'lucide-react';
-import { getRoomTypeImages, createRoomTypeImage, updateRoomTypeImage, deleteRoomTypeImage, setImageAsPrimary, RoomTypeImage, CreateRoomTypeImageData } from '@/lib/api/roomTypeImages';
+import { getRoomTypeImages, createRoomTypeImageWithFile, updateRoomTypeImageWithFile, deleteRoomTypeImage, setImageAsPrimary, RoomTypeImage, CreateRoomTypeImageWithFileData, UpdateRoomTypeImageWithFileData } from '@/lib/api/roomTypeImages';
 import Pagination from '@/components/Pagination';
 
 export default function RoomTypeImagesPage() {
@@ -45,13 +45,15 @@ export default function RoomTypeImagesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const [formData, setFormData] = useState<CreateRoomTypeImageData>({
+  const [formData, setFormData] = useState<CreateRoomTypeImageWithFileData>({
     room_group_room_type_id: 0,
-    image_url: '',
+    image_file: new File([], ''),
     alt_text: '',
     is_primary: false
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -90,8 +92,8 @@ export default function RoomTypeImagesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.image_url.trim()) {
-      toast.error('Please enter an image URL');
+    if (!selectedFile && !editingImage) {
+      toast.error('Please select an image file');
       return;
     }
 
@@ -102,9 +104,19 @@ export default function RoomTypeImagesPage() {
 
     try {
       setSubmitting(true);
+      setUploading(true);
       
       if (editingImage) {
-        const response = await updateRoomTypeImage(editingImage.image_id, formData);
+        const updateData: UpdateRoomTypeImageWithFileData = {
+          alt_text: formData.alt_text,
+          is_primary: formData.is_primary
+        };
+        
+        if (selectedFile) {
+          updateData.image_file = selectedFile;
+        }
+        
+        const response = await updateRoomTypeImageWithFile(editingImage.image_id, updateData);
         if (response.success) {
           toast.success('Image updated successfully');
           setShowModal(false);
@@ -113,7 +125,14 @@ export default function RoomTypeImagesPage() {
           fetchData();
         }
       } else {
-        const response = await createRoomTypeImage(formData);
+        const createData: CreateRoomTypeImageWithFileData = {
+          room_group_room_type_id: formData.room_group_room_type_id,
+          image_file: selectedFile!,
+          alt_text: formData.alt_text,
+          is_primary: formData.is_primary
+        };
+        
+        const response = await createRoomTypeImageWithFile(createData);
         if (response.success) {
           toast.success('Image added successfully');
           setShowModal(false);
@@ -126,6 +145,7 @@ export default function RoomTypeImagesPage() {
       toast.error(error.message);
     } finally {
       setSubmitting(false);
+      setUploading(false);
     }
   };
 
@@ -133,10 +153,11 @@ export default function RoomTypeImagesPage() {
     setEditingImage(image);
     setFormData({
       room_group_room_type_id: image.room_group_room_type_id,
-      image_url: image.image_url,
+      image_file: new File([], ''),
       alt_text: image.alt_text || '',
       is_primary: image.is_primary
     });
+    setSelectedFile(null);
     setPreviewUrl(image.image_url);
     setShowModal(true);
   };
@@ -174,10 +195,11 @@ export default function RoomTypeImagesPage() {
   const resetForm = () => {
     setFormData({
       room_group_room_type_id: 0,
-      image_url: '',
+      image_file: new File([], ''),
       alt_text: '',
       is_primary: false
     });
+    setSelectedFile(null);
     setPreviewUrl(null);
   };
 
@@ -468,21 +490,25 @@ export default function RoomTypeImagesPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Image URL *
+                  Image File *
                 </label>
                 <input
-                  type="url"
-                  value={formData.image_url}
+                  type="file"
+                  accept="image/*"
                   onChange={(e) => {
-                    setFormData({ ...formData, image_url: e.target.value });
-                    setPreviewUrl(e.target.value);
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setSelectedFile(file);
+                      setFormData({ ...formData, image_file: file });
+                      const url = URL.createObjectURL(file);
+                      setPreviewUrl(url);
+                    }
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="https://example.com/image.jpg"
-                  required
+                  required={!editingImage}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Copy and paste the image URL here. Make sure the URL ends with an image extension (.jpg, .png, .gif, .webp)
+                  Select an image file. Accepted formats: JPG, PNG, GIF, WebP (Max size: 5MB)
                 </p>
               </div>
 
@@ -537,13 +563,13 @@ export default function RoomTypeImagesPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={submitting || uploading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                 >
-                  {submitting ? (
+                  {submitting || uploading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      {editingImage ? 'Updating...' : 'Creating...'}
+                      {uploading ? 'Uploading...' : editingImage ? 'Updating...' : 'Creating...'}
                     </>
                   ) : (
                     <>
