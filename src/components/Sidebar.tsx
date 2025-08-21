@@ -117,7 +117,8 @@ export default function Sidebar() {
     // {
     //   title: 'SYSTEM OPTIONS',
     //   items: [
-    //     { id: 'settings', label: 'Settings', icon: 'Settings', href: '/settings' }
+    //     { id: 'profile', label: 'Profile', icon: 'User', href: '/profile' },
+        // { id: 'settings', label: 'Settings', icon: 'Settings', href: '/settings' }
     //   ]
     // }
   ];
@@ -519,12 +520,12 @@ export default function Sidebar() {
                     </div>
                   </Link>
                   
-                  <Link href="/settings" className="block">
+                  {/* <Link href="/settings" className="block">
                     <div className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
                       <SettingsIcon className="w-4 h-4 mr-3" />
                       Settings
                     </div>
-                  </Link>
+                  </Link> */}
                   
                   <div className="border-t border-gray-100">
                     <button

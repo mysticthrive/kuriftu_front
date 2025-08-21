@@ -2,13 +2,8 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  created_at: string;
-}
+import { login, register, getProfile, logout, storeAuthData, getStoredUser, isAuthenticated } from '@/lib/api/auth';
+import { User } from '@/lib/api/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -27,57 +22,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   const checkAuth = async () => {
-    // Mock auth check - just check if token exists
-    const token = localStorage.getItem('authToken');
-    if (token && token.startsWith('mock-jwt-token-')) {
-      // Mock user data - you can customize this
-      const mockUser = {
-        id: 1,
-        name: 'Demo User',
-        email: 'demo@example.com',
-        created_at: new Date().toISOString()
-      };
-      setUser(mockUser);
+    try {
+      if (isAuthenticated()) {
+        const storedUser = getStoredUser();
+        if (storedUser) {
+          setUser(storedUser);
+        } else {
+          // Try to get fresh user data from server
+          const response = await getProfile();
+          if (response.success && response.data) {
+            setUser(response.data);
+            storeAuthData(response.data, localStorage.getItem('token') || '');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      // Clear invalid auth data
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const signIn = async (email: string, password: string): Promise<boolean> => {
-    // Mock authentication - accept any email/password
-    const mockUser = {
-      id: 1,
-      name: email.split('@')[0] || 'User',
-      email: email,
-      created_at: new Date().toISOString()
-    };
-    
-    const mockToken = 'mock-jwt-token-' + Date.now();
-    
-    localStorage.setItem('authToken', mockToken);
-    setUser(mockUser);
-    return true;
+    try {
+      const response = await login({ email, password });
+      if (response.success && response.data) {
+        const { user, token } = response.data;
+        storeAuthData(user, token);
+        setUser(user);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Sign in failed:', error);
+      return false;
+    }
   };
 
   const signUp = async (name: string, email: string, password: string): Promise<boolean> => {
-    // Mock registration - accept any data
-    const mockUser = {
-      id: 1,
-      name: name,
-      email: email,
-      created_at: new Date().toISOString()
-    };
-    
-    const mockToken = 'mock-jwt-token-' + Date.now();
-    
-    localStorage.setItem('authToken', mockToken);
-    setUser(mockUser);
-    return true;
+    try {
+      const response = await register({ name, email, password });
+      if (response.success && response.data) {
+        const { user, token } = response.data;
+        storeAuthData(user, token);
+        setUser(user);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Sign up failed:', error);
+      return false;
+    }
   };
 
   const signOut = () => {
-    localStorage.removeItem('authToken');
+    logout();
     setUser(null);
-    router.push('/signin');
   };
 
   useEffect(() => {
