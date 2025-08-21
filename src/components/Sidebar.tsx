@@ -347,7 +347,7 @@ export default function Sidebar() {
   };
 
   return (
-    <div className={`bg-gray-50 shadow-lg transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'} ${collapsed ? 'overflow-visible' : 'overflow-hidden'}`}>
+    <div className={`bg-gray-50 shadow-lg transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'} ${collapsed ? 'overflow-visible' : 'overflow-hidden'} flex-shrink-0`}>
       <div className="flex flex-col h-full">
         {/* Logo Section */}
         <div className={`${collapsed ? 'p-2' : 'p-4'} border-b border-gray-200`}>
@@ -454,7 +454,11 @@ export default function Sidebar() {
         ) : (
           <div className="p-2 border-b border-gray-200">
             <div className="flex items-center justify-center relative group">
-              <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+              <div 
+                className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-green-700 transition-colors"
+                onMouseEnter={() => setHotelDropdownOpen(true)}
+                onMouseLeave={() => setHotelDropdownOpen(false)}
+              >
                 <span className="text-white font-bold text-sm">
                   {getCurrentHotel()?.label.charAt(0) || 'H'}
                 </span>
@@ -463,6 +467,48 @@ export default function Sidebar() {
               <div className="absolute left-full top-0 ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                 <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
                   {getCurrentHotel()?.label}
+                </div>
+              </div>
+
+              {/* Hotel Dropdown Menu for Collapsed State */}
+              <div className="absolute left-full top-0 ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-[9999] hover:opacity-100 hover:visible">
+                <div className="bg-white border border-gray-200 rounded-lg shadow-lg min-w-48">
+                  <div className="px-3 py-2 border-b border-gray-100">
+                    <div className="flex items-center">
+                      <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center mr-2">
+                        <span className="text-white text-xs font-bold">
+                          {getCurrentHotel()?.label.charAt(0) || 'H'}
+                        </span>
+                      </div>
+                      <span className="text-sm font-medium text-gray-900">Select Hotel</span>
+                    </div>
+                  </div>
+                  <div className="py-2">
+                    {hotels.map((hotel) => (
+                      <button
+                        key={hotel.value}
+                        onClick={() => handleHotelSelect(hotel.value)}
+                        className={`w-full flex items-center px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer ${
+                          selectedHotel === hotel.value ? 'bg-green-50 text-green-700' : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-white text-xs font-bold">
+                            {hotel.label.charAt(0)}
+                          </span>
+                        </div>
+                        <div className="text-left">
+                          <div className="font-medium">{hotel.shortLabel}</div>
+                          <div className="text-xs text-gray-500">{hotel.label}</div>
+                        </div>
+                        {selectedHotel === hotel.value && (
+                          <div className="ml-auto">
+                            <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -564,6 +610,42 @@ export default function Sidebar() {
             {/* User Dropdown Menu */}
             {userDropdownOpen && !collapsed && (
               <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                <div className="py-1">
+                  <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
+                    <div className="font-medium">{user?.name || 'User'}</div>
+                    <div className="text-xs text-gray-500">{user?.email || 'user@example.com'}</div>
+                  </div>
+                  
+                  <Link href="/profile" className="block">
+                    <div className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                      <UserIcon className="w-4 h-4 mr-3" />
+                      Profile
+                    </div>
+                  </Link>
+                  
+                  {/* <Link href="/settings" className="block">
+                    <div className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                      <SettingsIcon className="w-4 h-4 mr-3" />
+                      Settings
+                    </div>
+                  </Link> */}
+                  
+                  <div className="border-t border-gray-100">
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer"
+                    >
+                      <LogOut className="w-4 h-4 mr-3" />
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* User Dropdown Menu for Collapsed State */}
+            {userDropdownOpen && collapsed && (
+              <div className="fixed left-16 bottom-4 bg-white border border-gray-200 rounded-md shadow-lg z-[9999] min-w-48">
                 <div className="py-1">
                   <div className="px-4 py-2 text-sm text-gray-700 border-b border-gray-100">
                     <div className="font-medium">{user?.name || 'User'}</div>
