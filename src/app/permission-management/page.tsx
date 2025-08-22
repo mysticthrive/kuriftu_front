@@ -23,7 +23,8 @@ import {
   DollarSign,
   Bed,
   BarChart3,
-  Link
+  Link,
+  Home
 } from 'lucide-react';
 import { 
   MenuItem, 
@@ -265,89 +266,50 @@ export default function PermissionManagementPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-white">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={toggleSidebar}
-                className="text-gray-500 hover:text-gray-700 lg:hidden"
-              >
-                <Menu size={24} />
-              </button>
-              <div className="flex items-center space-x-2">
-                <Shield className="h-6 w-6 text-blue-600" />
-                <h1 className="text-2xl font-semibold text-gray-900">Permission Management</h1>
-              </div>
+      <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            {/* Breadcrumb */}
+            <div className="mb-4">
+              <nav className="flex items-center text-sm text-gray-500">
+                <Home className="w-4 h-4 mr-2" />
+                <span>Dashboard</span>
+                <span className="mx-2">/</span>
+                <span className="text-gray-900 font-medium">Permission Management</span>
+              </nav>
             </div>
-          </div>
-        </header>
 
-        {/* Main Content */}
-        <main className="flex-1 overflow-auto">
-          <div className="p-6">
-            {/* Filters */}
-            <div className="mb-6 bg-white rounded-lg shadow p-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Search Menu Items
-                  </label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                    <input
-                      type="text"
-                      placeholder="Search menu items..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                    />
+            <div className="mb-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mr-4">
+                    <Shield className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-900">Permission Management</h1>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Filter by Role
-                  </label>
-                  <select
-                    value={selectedRole}
-                    onChange={(e) => setSelectedRole(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {filteredRoles.map(role => (
-                      <option key={role.id} value={role.role_name}>
-                        {role.role_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-end">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={showOnlyVisible}
-                      onChange={(e) => setShowOnlyVisible(e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700">Show only visible items</span>
-                  </label>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              <div className="flex items-center space-x-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search menu items..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Permission Matrix */}
             <div className="bg-white rounded-lg shadow overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900">Menu Permissions Matrix</h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  Toggle permissions for each role. Green indicates visible, red indicates hidden. 
-                  When toggling a parent item, all its sub-items follow the same visibility state.
-                  When toggling a sub-item to visible, its parent becomes visible automatically.
-                </p>
-              </div>
-              
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
