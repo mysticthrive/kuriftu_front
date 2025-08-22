@@ -32,7 +32,11 @@ import {
   Image,
   Gift,
   CreditCard,
-  Shield
+  Shield,
+  TrendingUp,
+  Activity,
+  XCircle,
+  FileText
 } from 'lucide-react';
 
 interface MenuItem {
@@ -150,21 +154,6 @@ export default function Sidebar() {
       collapsible: true
     });
 
-    // Add Accounting section (hardcoded for now)
-    sections.push({
-      title: 'ACCOUNTING',
-      items: [
-        { 
-          id: 'report', 
-          label: 'Report', 
-          icon: 'BarChart3', 
-          children: [
-            { id: 'booking-report', label: 'Booking Report', icon: 'Calendar', href: '/reports/reservations' },
-          ] 
-        }
-      ]
-    });
-
     return sections;
   };
 
@@ -227,10 +216,13 @@ export default function Sidebar() {
         items: [
           { 
             id: 'report', 
-            label: 'Report', 
+            label: 'Reports & Logs', 
             icon: 'BarChart3', 
             children: [
-              { id: 'booking-report', label: 'Booking Report', icon: 'Calendar', href: '/reports/reservations' },
+              { id: 'daily-arrivals-departures', label: 'Daily Arrivals/Departures', icon: 'Calendar', href: '/reports/daily-arrivals-departures' },
+              { id: 'occupancy-revenue', label: 'Occupancy & Revenue Report', icon: 'TrendingUp', href: '/reports/occupancy-revenue' },
+              { id: 'staff-activity-log', label: 'Staff Activity Log', icon: 'Activity', href: '/reports/staff-activity-log' },
+              { id: 'no-show-cancellation', label: 'No-Show & Cancellation Tracking', icon: 'XCircle', href: '/reports/no-show-cancellation' },
             ] 
           }
         ]
@@ -308,7 +300,11 @@ export default function Sidebar() {
       Image,
       Gift,
       CreditCard,
-      Shield
+      Shield,
+      TrendingUp,
+      Activity,
+      XCircle,
+      FileText
     };
     return iconMap[iconName] || LayoutDashboard;
   };
