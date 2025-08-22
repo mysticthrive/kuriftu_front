@@ -6,7 +6,8 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSidebar } from '@/contexts/SidebarContext';
 import toast from 'react-hot-toast';
-import { getMenuItemsByRole } from '@/lib/api/menuPermissions';
+import { getMenuItemsByRole, MenuItem as ApiMenuItem } from '@/lib/api/menuPermissions';
+import { sortMenuItems, sortChildrenByOrder } from '@/lib/utils/menuSorting';
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -59,7 +60,7 @@ export default function Sidebar() {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [hotelDropdownOpen, setHotelDropdownOpen] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState('africanVillage');
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [menuItems, setMenuItems] = useState<ApiMenuItem[]>([]);
   const [loadingMenu, setLoadingMenu] = useState(true);
   const { user, signOut } = useAuth();
   const { collapsed, toggleSidebar } = useSidebar();
@@ -105,11 +106,14 @@ export default function Sidebar() {
       return getFallbackMenuItems();
     }
 
-    // Group menu items by parent_id
-    const menuMap = new Map<string, MenuItem[]>();
-    const rootItems: MenuItem[] = [];
+    // Sort menu items using shared utility (same as Permission Management page)
+    const sortedMenuItems = sortMenuItems(menuItems);
 
-    menuItems.forEach(item => {
+    // Group menu items by parent_id
+    const menuMap = new Map<string, ApiMenuItem[]>();
+    const rootItems: ApiMenuItem[] = [];
+
+    sortedMenuItems.forEach(item => {
       if (item.parent_id) {
         if (!menuMap.has(item.parent_id)) {
           menuMap.set(item.parent_id, []);
@@ -137,7 +141,9 @@ export default function Sidebar() {
       // Add children if they exist
       const children = menuMap.get(item.menu_id);
       if (children && children.length > 0) {
-        menuItem.children = children.map(child => ({
+        // Sort children using shared utility (same as Permission Management page)
+        const sortedChildren = sortChildrenByOrder(children);
+        menuItem.children = sortedChildren.map(child => ({
           id: child.menu_id,
           label: child.label,
           icon: child.icon || 'Circle',
@@ -674,25 +680,6 @@ export default function Sidebar() {
 
         {/* Bottom Section */}
         <div className={`border-t border-gray-200 ${collapsed ? 'p-2' : 'p-4'} space-y-4`}>
-          {/* Notifications */}
-          {/* {!collapsed && (
-            <div className="flex items-center px-2 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md cursor-pointer transition-colors">
-              <Bell className="w-5 h-5 mr-3" />
-              <span className="text-sm font-medium">Notifications</span>
-              <div className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                5
-              </div>
-            </div>
-          )} */}
-
-          {/* Support */}
-          {/* {!collapsed && (
-            <div className="flex items-center px-2 py-2 text-gray-700 hover:bg-green-50 hover:text-green-700 rounded-md cursor-pointer transition-colors">
-              <HelpCircle className="w-5 h-5 mr-3" />
-              <span className="text-sm font-medium">Support</span>
-            </div>
-          )} */}
-
           {/* User Profile */}
           <div className="relative" ref={userDropdownRef}>
             <div 
@@ -739,13 +726,6 @@ export default function Sidebar() {
                     </div>
                   </Link>
                   
-                  {/* <Link href="/settings" className="block">
-                    <div className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
-                      <SettingsIcon className="w-4 h-4 mr-3" />
-                      Settings
-                    </div>
-                  </Link> */}
-                  
                   <div className="border-t border-gray-100">
                     <button
                       onClick={handleLogout}
@@ -774,13 +754,6 @@ export default function Sidebar() {
                       Profile
                     </div>
                   </Link>
-                  
-                  {/* <Link href="/settings" className="block">
-                    <div className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
-                      <SettingsIcon className="w-4 h-4 mr-3" />
-                      Settings
-                    </div>
-                  </Link> */}
                   
                   <div className="border-t border-gray-100">
                     <button

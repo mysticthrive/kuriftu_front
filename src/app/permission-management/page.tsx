@@ -35,6 +35,7 @@ import {
   getPermissions, 
   updatePermission
 } from '@/lib/api/menuPermissions';
+import { sortMenuItems } from '@/lib/utils/menuSorting';
 
 export default function PermissionManagementPage() {
   const { user, loading } = useAuth();
@@ -241,15 +242,25 @@ export default function PermissionManagementPage() {
     }
   };
 
-  const filteredMenuItems = menuItems.filter(item => {
-    if (searchTerm && !item.label.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return false;
-    }
-    if (showOnlyVisible && selectedRole && !permissionMatrix[item.menu_id]?.[selectedRole]) {
-      return false;
-    }
-    return true;
-  });
+  const filteredMenuItems = sortMenuItems(
+    menuItems.filter(item => {
+      if (searchTerm && !item.label.toLowerCase().includes(searchTerm.toLowerCase())) {
+        return false;
+      }
+      if (showOnlyVisible && selectedRole && !permissionMatrix[item.menu_id]?.[selectedRole]) {
+        return false;
+      }
+      return true;
+    })
+  );
+
+  // Debug: Log the sorted menu items to see the order
+  console.log('Sorted menu items:', filteredMenuItems.map(item => ({
+    menu_id: item.menu_id,
+    label: item.label,
+    parent_id: item.parent_id,
+    sort_order: item.sort_order
+  })));
 
   // Filter out Admin role from the roles list
   const filteredRoles = roles.filter(role => role.role_name !== 'Admin');
