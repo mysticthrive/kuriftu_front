@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSidebar } from '@/contexts/SidebarContext';
 import toast from 'react-hot-toast';
+import { getMenuItemsByRole } from '@/lib/api/menuPermissions';
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -28,7 +29,10 @@ import {
   DollarSign,
   Power,
   Bed,
-  Image
+  Image,
+  Gift,
+  CreditCard,
+  Shield
 } from 'lucide-react';
 
 interface MenuItem {
@@ -51,6 +55,8 @@ export default function Sidebar() {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [hotelDropdownOpen, setHotelDropdownOpen] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState('africanVillage');
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loadingMenu, setLoadingMenu] = useState(true);
   const { user, signOut } = useAuth();
   const { collapsed, toggleSidebar } = useSidebar();
   const userDropdownRef = useRef<HTMLDivElement>(null);
@@ -65,32 +71,87 @@ export default function Sidebar() {
     { value: 'awashfall', label: 'Awash Fall', shortLabel: 'Awash Fall' }
   ];
 
-  const menuSections: MenuSection[] = [
-    {
+  // Fetch menu items from database based on user role
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      if (user?.role) {
+        try {
+          setLoadingMenu(true);
+          const response = await getMenuItemsByRole(user.role);
+          if (response.success && response.data) {
+            setMenuItems(response.data);
+          }
+        } catch (error) {
+          console.error('Error fetching menu items:', error);
+          // Fallback to default menu items
+          setMenuItems([]);
+        } finally {
+          setLoadingMenu(false);
+        }
+      }
+    };
+
+    fetchMenuItems();
+  }, [user?.role]);
+
+  // Function to convert database menu items to sidebar format
+  const convertToMenuSections = (): MenuSection[] => {
+    if (loadingMenu || menuItems.length === 0) {
+      // Fallback to hardcoded menu items
+      return getFallbackMenuItems();
+    }
+
+    // Group menu items by parent_id
+    const menuMap = new Map<string, MenuItem[]>();
+    const rootItems: MenuItem[] = [];
+
+    menuItems.forEach(item => {
+      if (item.parent_id) {
+        if (!menuMap.has(item.parent_id)) {
+          menuMap.set(item.parent_id, []);
+        }
+        menuMap.get(item.parent_id)!.push(item);
+      } else {
+        rootItems.push(item);
+      }
+    });
+
+    // Convert to MenuSection format
+    const sections: MenuSection[] = [];
+    
+    // Daily Operation section
+    const dailyOperationItems: MenuItem[] = [];
+    
+    rootItems.forEach(item => {
+      const menuItem: MenuItem = {
+        id: item.menu_id,
+        label: item.label,
+        icon: item.icon || 'Circle',
+        href: item.href
+      };
+
+      // Add children if they exist
+      const children = menuMap.get(item.menu_id);
+      if (children && children.length > 0) {
+        menuItem.children = children.map(child => ({
+          id: child.menu_id,
+          label: child.label,
+          icon: child.icon || 'Circle',
+          href: child.href
+        }));
+      }
+
+      dailyOperationItems.push(menuItem);
+    });
+
+    sections.push({
       title: 'DAILY OPERATION',
-      items: [
-        { id: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', href: '/dashboard' },
-                 { id: 'reservation', label: 'Reservation', icon: 'Calendar', href: '/reservations' },
-        { 
-          id: 'room-operation', 
-          label: 'Room Operation', 
-          icon: 'Building2', 
-          children: [
-            { id: 'room-group', label: 'Room Group', icon: 'Building2', href: '/room-group' },
-            { id: 'room-type', label: 'Room Type', icon: 'Building2', href: '/room-type' },
-            { id: 'room-management', label: 'Room Group Room Types', icon: 'Settings', href: '/room-management' },
-            { id: 'room-type-images', label: 'Room Type Image', icon: 'Image', href: '/room-type-images' },
-            { id: 'room-pricing', label: 'Room Pricing', icon: 'DollarSign', href: '/room-pricing' },
-            { id: 'rooms', label: 'Rooms', icon: 'Bed', href: '/rooms' },
-          ] 
-        },
-                //  { id: 'manage-staff', label: 'Manage Staff', icon: 'Users', children: [] },
-         { id: 'manage-guests', label: 'Manage Guests', icon: 'User', href: '/guests' },
-        // { id: 'promotions', label: 'Promotions', icon: 'Rocket', href: '/promotions' }
-      ],
+      items: dailyOperationItems,
       collapsible: true
-    },
-    {
+    });
+
+    // Add Accounting section (hardcoded for now)
+    sections.push({
       title: 'ACCOUNTING',
       items: [
         { 
@@ -99,29 +160,85 @@ export default function Sidebar() {
           icon: 'BarChart3', 
           children: [
             { id: 'booking-report', label: 'Booking Report', icon: 'Calendar', href: '/reports/reservations' },
-            // { id: 'revenue-report', label: 'Revenue Report', icon: 'DollarSign', href: '/reports/revenue' },
-            // { id: 'occupancy-report', label: 'Occupancy Report', icon: 'Building2', href: '/reports/occupancy' },
-            // { id: 'guest-report', label: 'Guest Report', icon: 'User', href: '/reports/guests' },
-            // { id: 'room-performance', label: 'Room Performance', icon: 'BarChart3', href: '/reports/room-performance' },
-            // { id: 'financial-summary', label: 'Financial Summary', icon: 'DollarSign', href: '/reports/financial' }
           ] 
         }
       ]
-    },
-    // {
-    //   title: 'MAINTENANCE',
-    //   items: [
-    //     { id: 'maintenance', label: 'Maintenance', icon: 'Wrench', href: '/maintenance' }
-    //   ]
-    // },
-    // {
-    //   title: 'SYSTEM OPTIONS',
-    //   items: [
-    //     { id: 'profile', label: 'Profile', icon: 'User', href: '/profile' },
-        // { id: 'settings', label: 'Settings', icon: 'Settings', href: '/settings' }
-    //   ]
-    // }
-  ];
+    });
+
+    return sections;
+  };
+
+  // Fallback menu items (original hardcoded logic)
+  const getFallbackMenuItems = (): MenuSection[] => {
+    const baseItems = [
+      { id: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', href: '/dashboard' },
+      { id: 'reservation', label: 'Reservation', icon: 'Calendar', href: '/reservations' },
+      { 
+        id: 'room-operation', 
+        label: 'Room Operation', 
+        icon: 'Building2', 
+        children: [
+          { id: 'room-group', label: 'Room Group', icon: 'Building2', href: '/room-group' },
+          { id: 'room-type', label: 'Room Type', icon: 'Building2', href: '/room-type' },
+          { id: 'room-management', label: 'Room Group Room Types', icon: 'Settings', href: '/room-management' },
+          { id: 'room-type-images', label: 'Room Type Image', icon: 'Image', href: '/room-type-images' },
+          { id: 'room-pricing', label: 'Room Pricing', icon: 'DollarSign', href: '/room-pricing' },
+          { id: 'rooms', label: 'Rooms', icon: 'Bed', href: '/rooms' },
+        ] 
+      },
+      { id: 'manage-guests', label: 'Manage Guests', icon: 'User', href: '/guests' },
+    ];
+
+    const adminOnlyItems = [
+      { id: 'promo-code', label: 'Promo Code Management', icon: 'CreditCard', href: '/promo-code' },
+      { id: 'gift-card', label: 'Gift Card Management', icon: 'Gift', href: '/gift-card' },
+      { id: 'employee-management', label: 'Employee Management', icon: 'Users', href: '/employee-management' },
+      { id: 'permission-management', label: 'Permission Management', icon: 'Shield', href: '/permission-management' }
+    ];
+
+    // Role-based menu visibility
+    const userRole = user?.role;
+    let dailyOperationItems = [...baseItems];
+
+    if (userRole === 'Admin') {
+      dailyOperationItems = [...baseItems, ...adminOnlyItems];
+    } else if (userRole === 'Sales Manager') {
+      // Sales Manager can see promo codes and gift cards
+      dailyOperationItems = [...baseItems, 
+        { id: 'promo-code', label: 'Promo Code Management', icon: 'CreditCard', href: '/promo-code' },
+        { id: 'gift-card', label: 'Gift Card Management', icon: 'Gift', href: '/gift-card' }
+      ];
+    } else if (userRole === 'Front Office Manager') {
+      // Front Office Manager can see employee management
+      dailyOperationItems = [...baseItems, 
+        { id: 'employee-management', label: 'Employee Management', icon: 'Users', href: '/employee-management' }
+      ];
+    }
+    // Reservation Officer only sees base items
+
+    return [
+      {
+        title: 'DAILY OPERATION',
+        items: dailyOperationItems,
+        collapsible: true
+      },
+      {
+        title: 'ACCOUNTING',
+        items: [
+          { 
+            id: 'report', 
+            label: 'Report', 
+            icon: 'BarChart3', 
+            children: [
+              { id: 'booking-report', label: 'Booking Report', icon: 'Calendar', href: '/reports/reservations' },
+            ] 
+          }
+        ]
+      }
+    ];
+  };
+
+  const menuSections = convertToMenuSections();
 
   const toggleItem = (itemId: string) => {
     // Manual toggle should always work - this takes priority
@@ -188,7 +305,10 @@ export default function Sidebar() {
       SettingsIcon,
       DollarSign,
       Bed,
-      Image
+      Image,
+      Gift,
+      CreditCard,
+      Shield
     };
     return iconMap[iconName] || LayoutDashboard;
   };

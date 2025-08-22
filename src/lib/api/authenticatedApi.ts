@@ -48,6 +48,10 @@ export const authenticatedApiCall = async <T>(
       localStorage.removeItem('user');
       window.location.href = '/signin';
       throw new Error('Authentication failed. Please log in again.');
+    } else if (error.response?.status === 500) {
+      // Server error (like database connection issues)
+      console.error('Server error:', error.response?.data);
+      throw new Error('Server error. Please try again later.');
     }
     throw error;
   }
