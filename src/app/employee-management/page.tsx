@@ -175,11 +175,17 @@ export default function EmployeeManagementPage() {
 
 
 
-  const filteredEmployees = employees.filter(employee =>
-    employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredEmployees = employees.filter(employee => {
+    // If current user is Admin, hide Admin users from the table
+    if (user?.role === 'Admin' && employee.role === 'Admin') {
+      return false;
+    }
+    
+    // Apply search filter
+    return employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           employee.role.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -386,11 +392,13 @@ export default function EmployeeManagementPage() {
                     formErrors.role ? 'border-red-500' : 'border-gray-300'
                   }`}
                 >
-                  {AVAILABLE_ROLES.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
+                  {AVAILABLE_ROLES
+                    .filter(role => user?.role !== 'Admin' || role !== 'Admin')
+                    .map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
                 </select>
                 {formErrors.role && (
                   <p className="mt-1 text-sm text-red-600">{formErrors.role}</p>
