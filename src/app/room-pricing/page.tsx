@@ -197,6 +197,14 @@ export default function RoomPricingPage() {
 
   const handleEdit = (pricing: RoomPricing) => {
     setEditingPricing(pricing);
+    // Format the dates for HTML date input (YYYY-MM-DD)
+    const formattedStartDate = pricing.start_date 
+      ? new Date(pricing.start_date).toISOString().split('T')[0]
+      : '';
+    const formattedEndDate = pricing.end_date 
+      ? new Date(pricing.end_date).toISOString().split('T')[0]
+      : '';
+    
     setFormData({
       room_group_room_type_id: pricing.room_group_room_type_id,
       hotel: pricing.hotel,
@@ -204,9 +212,9 @@ export default function RoomPricingPage() {
       day_of_week: pricing.day_of_week,
       month: pricing.month,
       holiday_flag: pricing.holiday_flag,
-             start_date: pricing.start_date || '',
-       end_date: pricing.end_date || '',
-       price: Number(pricing.price)
+      start_date: formattedStartDate,
+      end_date: formattedEndDate,
+      price: Number(pricing.price)
     });
     setShowModal(true);
   };
