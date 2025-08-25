@@ -62,7 +62,7 @@ export interface UpdateMenuItemData {
 export const getMenuItems = async (): Promise<{ success: boolean; data?: MenuItem[]; message?: string }> => {
   try {
     const response = await authenticatedGet(`${API_BASE_URL}/menu-permissions/menu-items`);
-    return response;
+    return response as { success: boolean; data?: MenuItem[]; message?: string };
   } catch (error: any) {
     console.error('Error fetching menu items:', error);
     return {
@@ -75,7 +75,7 @@ export const getMenuItems = async (): Promise<{ success: boolean; data?: MenuIte
 export const getMenuItemsByRole = async (roleName: string): Promise<{ success: boolean; data?: MenuItem[]; message?: string }> => {
   try {
     const response = await authenticatedGet(`${API_BASE_URL}/menu-permissions/menu-items/${roleName}`);
-    return response;
+    return response as { success: boolean; data?: MenuItem[]; message?: string };
   } catch (error: any) {
     console.error('Error fetching menu items for role:', error);
     return {
@@ -88,7 +88,7 @@ export const getMenuItemsByRole = async (roleName: string): Promise<{ success: b
 export const getRoles = async (): Promise<{ success: boolean; data?: UserRole[]; message?: string }> => {
   try {
     const response = await authenticatedGet(`${API_BASE_URL}/menu-permissions/roles`);
-    return response;
+    return response as { success: boolean; data?: UserRole[]; message?: string };
   } catch (error: any) {
     console.error('Error fetching roles:', error);
     return {
@@ -101,7 +101,7 @@ export const getRoles = async (): Promise<{ success: boolean; data?: UserRole[];
 export const getPermissions = async (): Promise<{ success: boolean; data?: MenuPermission[]; message?: string }> => {
   try {
     const response = await authenticatedGet(`${API_BASE_URL}/menu-permissions/permissions`);
-    return response;
+    return response as { success: boolean; data?: MenuPermission[]; message?: string };
   } catch (error: any) {
     console.error('Error fetching permissions:', error);
     return {
@@ -114,7 +114,7 @@ export const getPermissions = async (): Promise<{ success: boolean; data?: MenuP
 export const updatePermission = async (data: UpdatePermissionData): Promise<{ success: boolean; message?: string }> => {
   try {
     const response = await authenticatedPut(`${API_BASE_URL}/menu-permissions/permissions`, data);
-    return response;
+    return response as { success: boolean; message?: string };
   } catch (error: any) {
     console.error('Error updating permission:', error);
     return {
@@ -129,7 +129,7 @@ export const updatePermission = async (data: UpdatePermissionData): Promise<{ su
 export const createMenuItem = async (data: CreateMenuItemData): Promise<{ success: boolean; data?: any; message?: string }> => {
   try {
     const response = await authenticatedPost(`${API_BASE_URL}/menu-permissions/menu-items`, data);
-    return response;
+    return response as { success: boolean; data?: any; message?: string };
   } catch (error: any) {
     console.error('Error creating menu item:', error);
     return {
@@ -142,7 +142,7 @@ export const createMenuItem = async (data: CreateMenuItemData): Promise<{ succes
 export const updateMenuItem = async (menuId: string, data: UpdateMenuItemData): Promise<{ success: boolean; message?: string }> => {
   try {
     const response = await authenticatedPut(`${API_BASE_URL}/menu-permissions/menu-items/${menuId}`, data);
-    return response;
+    return response as { success: boolean; message?: string };
   } catch (error: any) {
     console.error('Error updating menu item:', error);
     return {
