@@ -186,7 +186,7 @@ export default function Sidebar() {
 
     const adminOnlyItems = [
       { id: 'promo-code', label: 'Promo Code Management', icon: 'CreditCard', href: '/promo-code' },
-      { id: 'gift-card', label: 'Gift Card Management', icon: 'Gift', href: '/gift-card' },
+      { id: 'gift-card', label: 'Gift Card Management', icon: 'Gift', href: '/gift-card-management' },
       { id: 'employee-management', label: 'Employee Management', icon: 'Users', href: '/employee-management' },
       { id: 'permission-management', label: 'Permission Management', icon: 'Shield', href: '/permission-management' }
     ];
@@ -201,7 +201,7 @@ export default function Sidebar() {
       // Sales Manager can see promo codes and gift cards
       dailyOperationItems = [...baseItems, 
         { id: 'promo-code', label: 'Promo Code Management', icon: 'CreditCard', href: '/promo-code' },
-        { id: 'gift-card', label: 'Gift Card Management', icon: 'Gift', href: '/gift-card' }
+        { id: 'gift-card', label: 'Gift Card Management', icon: 'Gift', href: '/gift-card-management' }
       ];
     } else if (userRole === 'Front Office Manager') {
       // Front Office Manager can see employee management
