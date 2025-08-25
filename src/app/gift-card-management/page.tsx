@@ -158,19 +158,19 @@ export default function GiftCardManagementPage() {
     }
   };
 
-  const validateForm = () => {
+  const validateForm = (): boolean => {
     const errors: {[key: string]: string} = {};
     
     if (!formData.card_type) {
       errors.card_type = 'Card type is required';
     }
     
-    if (formData.initial_amount <= 0) {
+    if (!formData.initial_amount || formData.initial_amount <= 0) {
       errors.initial_amount = 'Initial amount must be greater than 0';
     }
     
     if (!formData.issued_to_guest_id) {
-      errors.issued_to_guest_id = 'Guest ID is required';
+      errors.issued_to_guest_id = 'Guest is required';
     }
     
     if (!formData.expiry_date) {
@@ -552,10 +552,10 @@ export default function GiftCardManagementPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Card Type *
-                  </label>
+                                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                     Card Type
+                   </label>
                   <select
                     name="card_type"
                     value={formData.card_type}
@@ -572,10 +572,10 @@ export default function GiftCardManagementPage() {
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Initial Amount *
-                  </label>
+                                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                     Initial Amount
+                   </label>
                   <input
                     type="number"
                     name="initial_amount"
@@ -628,19 +628,18 @@ export default function GiftCardManagementPage() {
                   </select>
                 </div>
 
-                                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                     Guest *
-                   </label>
-                   <select
-                     name="issued_to_guest_id"
-                     value={formData.issued_to_guest_id || ''}
-                     onChange={handleInputChange}
-                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                       formErrors.issued_to_guest_id ? 'border-red-500' : 'border-gray-300'
-                     }`}
-                     required
-                   >
+                                                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Guest
+                    </label>
+                                       <select
+                      name="issued_to_guest_id"
+                      value={formData.issued_to_guest_id || ''}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                        formErrors.issued_to_guest_id ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    >
                      <option value="">Select a guest</option>
                      {guests.map((guest) => (
                        <option key={guest.guest_id} value={guest.guest_id}>
@@ -653,41 +652,39 @@ export default function GiftCardManagementPage() {
                    )}
                  </div>
 
-                                 <div>
-                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                     Expiry Date *
-                   </label>
-                   <input
-                     type="date"
-                     name="expiry_date"
-                     value={formData.expiry_date || ''}
-                     onChange={handleInputChange}
-                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                       formErrors.expiry_date ? 'border-red-500' : 'border-gray-300'
-                     }`}
-                     required
-                   />
+                                                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Expiry Date
+                    </label>
+                                       <input
+                      type="date"
+                      name="expiry_date"
+                      value={formData.expiry_date || ''}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                        formErrors.expiry_date ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
                    {formErrors.expiry_date && (
                      <p className="mt-1 text-sm text-red-600">{formErrors.expiry_date}</p>
                    )}
                  </div>
               </div>
 
-                             <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                   Notes *
-                 </label>
-                 <textarea
-                   name="notes"
-                   value={formData.notes || ''}
-                   onChange={handleInputChange}
-                   rows={3}
-                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                     formErrors.notes ? 'border-red-500' : 'border-gray-300'
-                   }`}
-                   placeholder="Add any additional notes..."
-                   required
-                 />
+                                             <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notes
+                  </label>
+                                   <textarea
+                    name="notes"
+                    value={formData.notes || ''}
+                    onChange={handleInputChange}
+                    rows={3}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                      formErrors.notes ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="Add any additional notes..."
+                  />
                  {formErrors.notes && (
                    <p className="mt-1 text-sm text-red-600">{formErrors.notes}</p>
                  )}
