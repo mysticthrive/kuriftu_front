@@ -342,7 +342,6 @@ export default function GiftCardManagementPage() {
                   </div>
                   <div>
                     <h1 className="text-3xl font-bold text-gray-900">Gift Card Management</h1>
-                    <p className="text-gray-600 mt-1">Manage gift cards and track their usage</p>
                   </div>
                 </div>
                 <button
