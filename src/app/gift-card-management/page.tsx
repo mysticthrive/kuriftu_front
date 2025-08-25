@@ -29,6 +29,7 @@ import {
   updateGiftCard, 
   deleteGiftCard 
 } from '@/lib/api/giftCards';
+import { getGuests, Guest } from '@/lib/api/guests';
 
 export default function GiftCardManagementPage() {
   const { user, loading } = useAuth();
@@ -36,6 +37,7 @@ export default function GiftCardManagementPage() {
   const { toggleSidebar } = useSidebar();
   
   const [giftCards, setGiftCards] = useState<GiftCard[]>([]);
+  const [guests, setGuests] = useState<Guest[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -54,7 +56,6 @@ export default function GiftCardManagementPage() {
   const [submitting, setSubmitting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [pagination, setPagination] = useState<any>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -65,23 +66,17 @@ export default function GiftCardManagementPage() {
   useEffect(() => {
     if (user) {
       fetchGiftCards();
+      fetchGuests();
     }
-  }, [user, currentPage, itemsPerPage, searchTerm, statusFilter, cardTypeFilter]);
+  }, [user]);
 
   const fetchGiftCards = async () => {
     try {
       setLoadingData(true);
-      const response = await getGiftCards({
-        page: currentPage,
-        limit: itemsPerPage,
-        search: searchTerm,
-        status: statusFilter,
-        card_type: cardTypeFilter
-      });
+      const response = await getGiftCards();
       
       if (response.success && response.data) {
         setGiftCards(response.data);
-        setPagination(response.pagination);
       } else {
         toast.error(response.message || 'Failed to fetch gift cards');
       }
@@ -93,14 +88,31 @@ export default function GiftCardManagementPage() {
     }
   };
 
+  const fetchGuests = async () => {
+    try {
+      const response = await getGuests();
+      if (response.success && response.data) {
+        setGuests(response.data);
+      }
+    } catch (error: any) {
+      console.error('Error fetching guests:', error);
+      toast.error('Failed to fetch guests');
+    }
+  };
+
   const handleOpenModal = (giftCard?: GiftCard) => {
     if (giftCard) {
       setEditingGiftCard(giftCard);
+      // Format the expiry date for HTML date input (YYYY-MM-DD)
+      const formattedExpiryDate = giftCard.expiry_date 
+        ? new Date(giftCard.expiry_date).toISOString().split('T')[0]
+        : '';
+      
       setFormData({
         card_type: giftCard.card_type,
         initial_amount: Number(giftCard.initial_amount),
         issued_to_guest_id: giftCard.issued_to_guest_id,
-        expiry_date: giftCard.expiry_date,
+        expiry_date: formattedExpiryDate,
         status: giftCard.status,
         payment_status: giftCard.payment_status,
         notes: giftCard.notes
@@ -157,8 +169,18 @@ export default function GiftCardManagementPage() {
       errors.initial_amount = 'Initial amount must be greater than 0';
     }
     
-    if (formData.expiry_date && new Date(formData.expiry_date) <= new Date()) {
+    if (!formData.issued_to_guest_id) {
+      errors.issued_to_guest_id = 'Guest ID is required';
+    }
+    
+    if (!formData.expiry_date) {
+      errors.expiry_date = 'Expiry date is required';
+    } else if (new Date(formData.expiry_date) <= new Date()) {
       errors.expiry_date = 'Expiry date must be in the future';
+    }
+    
+    if (!formData.notes || formData.notes.trim() === '') {
+      errors.notes = 'Notes are required';
     }
     
     setFormErrors(errors);
@@ -252,6 +274,42 @@ export default function GiftCardManagementPage() {
     }
   };
 
+  const getGuestNameById = (guestId?: number) => {
+    if (!guestId) return 'Not assigned';
+    const guest = guests.find(g => g.guest_id === guestId);
+    return guest ? `${guest.first_name} ${guest.last_name}` : 'Guest not found';
+  };
+
+  // Frontend filtering logic
+  const filteredGiftCards = giftCards.filter(giftCard => {
+    const searchLower = searchTerm.toLowerCase();
+    const cardCodeLower = giftCard.card_code.toLowerCase();
+    const guestNameLower = getGuestNameById(giftCard.issued_to_guest_id).toLowerCase();
+    
+    const matchesSearch = cardCodeLower.includes(searchLower) || 
+                         guestNameLower.includes(searchLower);
+    const matchesStatus = !statusFilter || giftCard.status === statusFilter;
+    const matchesCardType = !cardTypeFilter || giftCard.card_type === cardTypeFilter;
+    
+    return matchesSearch && matchesStatus && matchesCardType;
+  });
+
+  // Pagination logic
+  const totalItems = filteredGiftCards.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedGiftCards = filteredGiftCards.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -307,7 +365,10 @@ export default function GiftCardManagementPage() {
                       type="text"
                       placeholder="Search gift cards..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1); // Reset to first page when searching
+                      }}
                       className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </div>
@@ -315,7 +376,10 @@ export default function GiftCardManagementPage() {
                 <div className="flex gap-2">
                   <select
                     value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
+                    onChange={(e) => {
+                      setStatusFilter(e.target.value);
+                      setCurrentPage(1); // Reset to first page when filtering
+                    }}
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
                     <option value="">All Status</option>
@@ -326,7 +390,10 @@ export default function GiftCardManagementPage() {
                   </select>
                   <select
                     value={cardTypeFilter}
-                    onChange={(e) => setCardTypeFilter(e.target.value)}
+                    onChange={(e) => {
+                      setCardTypeFilter(e.target.value);
+                      setCurrentPage(1); // Reset to first page when filtering
+                    }}
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
                     <option value="">All Types</option>
@@ -343,7 +410,7 @@ export default function GiftCardManagementPage() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
                 <p className="mt-2 text-gray-600">Loading gift cards...</p>
               </div>
-            ) : giftCards.length === 0 ? (
+                         ) : filteredGiftCards.length === 0 ? (
               <div className="text-center py-12">
                 <Gift className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No gift cards found</h3>
@@ -384,8 +451,8 @@ export default function GiftCardManagementPage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {giftCards.map((giftCard) => (
+                                     <tbody className="bg-white divide-y divide-gray-200">
+                     {paginatedGiftCards.map((giftCard) => (
                       <tr key={giftCard.gift_card_id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {giftCard.card_code}
@@ -415,9 +482,9 @@ export default function GiftCardManagementPage() {
                             {giftCard.payment_status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {giftCard.guest_name || 'Not assigned'}
-                        </td>
+                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                           {getGuestNameById(giftCard.issued_to_guest_id)}
+                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center space-x-2">
                             <button
@@ -450,19 +517,19 @@ export default function GiftCardManagementPage() {
               </div>
             )}
 
-            {/* Pagination */}
-            {pagination && pagination.total > 0 && (
-              <div className="mt-6">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={pagination.totalPages}
-                  totalItems={pagination.total}
-                  itemsPerPage={itemsPerPage}
-                  onPageChange={setCurrentPage}
-                  onItemsPerPageChange={setItemsPerPage}
-                />
-              </div>
-            )}
+                         {/* Pagination */}
+             {totalItems > 0 && (
+               <div className="mt-6">
+                 <Pagination
+                   currentPage={currentPage}
+                   totalPages={totalPages}
+                   totalItems={totalItems}
+                   itemsPerPage={itemsPerPage}
+                   onPageChange={handlePageChange}
+                   onItemsPerPageChange={handleItemsPerPageChange}
+                 />
+               </div>
+             )}
           </div>
         </main>
       </div>
@@ -561,52 +628,70 @@ export default function GiftCardManagementPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Guest ID (Optional)
-                  </label>
-                  <input
-                    type="number"
-                    name="issued_to_guest_id"
-                    value={formData.issued_to_guest_id || ''}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Enter guest ID"
-                  />
-                </div>
+                                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                     Guest *
+                   </label>
+                   <select
+                     name="issued_to_guest_id"
+                     value={formData.issued_to_guest_id || ''}
+                     onChange={handleInputChange}
+                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                       formErrors.issued_to_guest_id ? 'border-red-500' : 'border-gray-300'
+                     }`}
+                     required
+                   >
+                     <option value="">Select a guest</option>
+                     {guests.map((guest) => (
+                       <option key={guest.guest_id} value={guest.guest_id}>
+                         {guest.first_name} {guest.last_name} - {guest.email}
+                       </option>
+                     ))}
+                   </select>
+                   {formErrors.issued_to_guest_id && (
+                     <p className="mt-1 text-sm text-red-600">{formErrors.issued_to_guest_id}</p>
+                   )}
+                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Expiry Date (Optional)
-                  </label>
-                  <input
-                    type="date"
-                    name="expiry_date"
-                    value={formData.expiry_date || ''}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
-                      formErrors.expiry_date ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  />
-                  {formErrors.expiry_date && (
-                    <p className="mt-1 text-sm text-red-600">{formErrors.expiry_date}</p>
-                  )}
-                </div>
+                                 <div>
+                   <label className="block text-sm font-medium text-gray-700 mb-2">
+                     Expiry Date *
+                   </label>
+                   <input
+                     type="date"
+                     name="expiry_date"
+                     value={formData.expiry_date || ''}
+                     onChange={handleInputChange}
+                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                       formErrors.expiry_date ? 'border-red-500' : 'border-gray-300'
+                     }`}
+                     required
+                   />
+                   {formErrors.expiry_date && (
+                     <p className="mt-1 text-sm text-red-600">{formErrors.expiry_date}</p>
+                   )}
+                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notes (Optional)
-                </label>
-                <textarea
-                  name="notes"
-                  value={formData.notes || ''}
-                  onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="Add any additional notes..."
-                />
-              </div>
+                             <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Notes *
+                 </label>
+                 <textarea
+                   name="notes"
+                   value={formData.notes || ''}
+                   onChange={handleInputChange}
+                   rows={3}
+                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                     formErrors.notes ? 'border-red-500' : 'border-gray-300'
+                   }`}
+                   placeholder="Add any additional notes..."
+                   required
+                 />
+                 {formErrors.notes && (
+                   <p className="mt-1 text-sm text-red-600">{formErrors.notes}</p>
+                 )}
+               </div>
 
               <div className="flex justify-end space-x-3 pt-4">
                 <button
@@ -680,10 +765,10 @@ export default function GiftCardManagementPage() {
                     {viewingGiftCard.payment_status}
                   </span>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Issued To</label>
-                  <p className="mt-1 text-sm text-gray-900">{viewingGiftCard.guest_name || 'Not assigned'}</p>
-                </div>
+                                 <div>
+                   <label className="block text-sm font-medium text-gray-700">Issued To</label>
+                   <p className="mt-1 text-sm text-gray-900">{getGuestNameById(viewingGiftCard.issued_to_guest_id)}</p>
+                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Issued At</label>
                   <p className="mt-1 text-sm text-gray-900">{new Date(viewingGiftCard.issued_at).toLocaleDateString()}</p>
