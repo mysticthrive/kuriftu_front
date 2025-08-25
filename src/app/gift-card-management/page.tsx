@@ -98,7 +98,7 @@ export default function GiftCardManagementPage() {
       setEditingGiftCard(giftCard);
       setFormData({
         card_type: giftCard.card_type,
-        initial_amount: giftCard.initial_amount,
+        initial_amount: Number(giftCard.initial_amount),
         issued_to_guest_id: giftCard.issued_to_guest_id,
         expiry_date: giftCard.expiry_date,
         status: giftCard.status,
@@ -399,12 +399,12 @@ export default function GiftCardManagementPage() {
                             {giftCard.card_type}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          ${giftCard.initial_amount.toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          ${giftCard.current_balance.toFixed(2)}
-                        </td>
+                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                           ${Number(giftCard.initial_amount).toFixed(2)}
+                         </td>
+                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                           ${Number(giftCard.current_balance).toFixed(2)}
+                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(giftCard.status)}`}>
                             {giftCard.status}
@@ -660,14 +660,14 @@ export default function GiftCardManagementPage() {
                   <label className="block text-sm font-medium text-gray-700">Card Type</label>
                   <p className="mt-1 text-sm text-gray-900">{viewingGiftCard.card_type}</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Initial Amount</label>
-                  <p className="mt-1 text-sm text-gray-900">${viewingGiftCard.initial_amount.toFixed(2)}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Current Balance</label>
-                  <p className="mt-1 text-sm text-gray-900">${viewingGiftCard.current_balance.toFixed(2)}</p>
-                </div>
+                                 <div>
+                   <label className="block text-sm font-medium text-gray-700">Initial Amount</label>
+                   <p className="mt-1 text-sm text-gray-900">${Number(viewingGiftCard.initial_amount).toFixed(2)}</p>
+                 </div>
+                 <div>
+                   <label className="block text-sm font-medium text-gray-700">Current Balance</label>
+                   <p className="mt-1 text-sm text-gray-900">${Number(viewingGiftCard.current_balance).toFixed(2)}</p>
+                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Status</label>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-1 ${getStatusColor(viewingGiftCard.status)}`}>
