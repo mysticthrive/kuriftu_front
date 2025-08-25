@@ -147,6 +147,12 @@ export default function GuestsPage() {
       errors.date_of_birth = 'Date of birth must be in YYYY-MM-DD format';
     }
 
+    if (!formData.gender) {
+      errors.gender = 'Gender is required';
+    } else if (!['male', 'female', 'other'].includes(formData.gender)) {
+      errors.gender = 'Gender must be male, female, or other';
+    }
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -203,6 +209,11 @@ export default function GuestsPage() {
 
   const handleEdit = (guest: Guest) => {
     setEditingGuest(guest);
+    // Format the date of birth for HTML date input (YYYY-MM-DD)
+    const formattedDateOfBirth = guest.date_of_birth 
+      ? new Date(guest.date_of_birth).toISOString().split('T')[0]
+      : '';
+    
     setFormData({
       first_name: guest.first_name,
       last_name: guest.last_name,
@@ -213,7 +224,7 @@ export default function GuestsPage() {
       city: guest.city || '',
       zip_code: guest.zip_code || '',
       address: guest.address || '',
-      date_of_birth: guest.date_of_birth || ''
+      date_of_birth: formattedDateOfBirth
     });
     setShowModal(true);
   };
@@ -611,13 +622,18 @@ export default function GuestsPage() {
                       name="gender"
                       value={formData.gender || ''}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                        formErrors.gender ? 'border-red-500' : 'border-gray-300'
+                      }`}
                     >
                       <option value="">Select gender</option>
                       <option value="male">Male</option>
                       <option value="female">Female</option>
                       <option value="other">Other</option>
                     </select>
+                    {formErrors.gender && (
+                      <p className="mt-1 text-sm text-red-600">{formErrors.gender}</p>
+                    )}
                   </div>
 
                   <div>
