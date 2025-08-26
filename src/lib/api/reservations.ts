@@ -29,7 +29,7 @@ export interface Reservation {
   phone?: string;
   // Room details
   room_number: string;
-  hotel: 'africanVillage' | 'bishoftu' | 'entoto' | 'laketana' | 'awashfall';
+  hotel: string;
   room_type?: string;
   room_group?: string;
 }
@@ -71,7 +71,7 @@ export interface UpdateReservationData {
 export interface Room {
   room_id: number;
   room_number: string;
-  hotel: 'africanVillage' | 'bishoftu' | 'entoto' | 'laketana' | 'awashfall';
+  hotel: string;
   status: 'available' | 'occupied' | 'maintenance' | 'hold' | 'booked';
   room_type?: string;
   room_group?: string;

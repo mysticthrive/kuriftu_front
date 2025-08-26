@@ -77,7 +77,7 @@ export default function RoomsPage() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [formData, setFormData] = useState<CreateRoomData>({
-    hotel: selectedHotel as any,
+    hotel: selectedHotel,
     room_number: '',
     room_type_id: undefined,
     room_group_id: undefined,
@@ -100,7 +100,7 @@ export default function RoomsPage() {
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
-      hotel: selectedHotel as any
+      hotel: selectedHotel
     }));
   }, [selectedHotel]);
 
@@ -202,7 +202,7 @@ export default function RoomsPage() {
 
   const resetForm = () => {
     setFormData({
-      hotel: selectedHotel as any,
+      hotel: selectedHotel,
       room_number: '',
       room_type_id: undefined,
       room_group_id: undefined,

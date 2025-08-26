@@ -4,7 +4,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/a
 
 export interface Room {
   room_id: number;
-  hotel: 'africanVillage' | 'bishoftu' | 'entoto' | 'laketana' | 'awashfall';
+  hotel: string;
   room_number: string;
   status: 'available' | 'occupied' | 'maintenance' | 'hold' | 'booked';
   created_at: string;
@@ -19,7 +19,7 @@ export interface Room {
 }
 
 export interface CreateRoomData {
-  hotel: 'africanVillage' | 'bishoftu' | 'entoto' | 'laketana' | 'awashfall';
+  hotel: string;
   room_number: string;
   room_type_id?: number;
   room_group_id?: number;

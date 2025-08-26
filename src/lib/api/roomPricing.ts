@@ -5,7 +5,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/a
 export interface RoomPricing {
   pricing_id: number;
   room_group_room_type_id: number;
-  hotel: 'africanVillage' | 'bishoftu' | 'entoto' | 'laketana' | 'awashfall';
+  hotel: string;
   occupancy: 'single' | 'double' | 'triple' | 'child';
   day_of_week?: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
   month?: number; // 1-12
@@ -21,7 +21,7 @@ export interface RoomPricing {
 
 export interface CreateRoomPricingData {
   room_group_room_type_id: number;
-  hotel: 'africanVillage' | 'bishoftu' | 'entoto' | 'laketana' | 'awashfall';
+  hotel: string;
   occupancy: 'single' | 'double' | 'triple' | 'child';
   day_of_week?: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
   month?: number;
