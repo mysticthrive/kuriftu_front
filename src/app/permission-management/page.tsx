@@ -113,7 +113,7 @@ export default function PermissionManagementPage() {
       }
     } catch (error: any) {
       console.error('Error fetching data:', error);
-      toast.error('Failed to fetch data');
+      toast.error(error.message || 'Failed to fetch data');
     } finally {
       setLoadingData(false);
     }

@@ -36,73 +36,53 @@ export interface ApiResponse<T> {
 
 // GET all room type images
 export const getRoomTypeImages = async (): Promise<ApiResponse<RoomTypeImage[]>> => {
-  try {
-    return await authenticatedGet<ApiResponse<RoomTypeImage[]>>('/room-type-images');
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch room type images');
-  }
+  return await authenticatedGet<ApiResponse<RoomTypeImage[]>>('/room-type-images');
 };
 
 // POST create new room type image with file upload
 export const createRoomTypeImageWithFile = async (data: CreateRoomTypeImageWithFileData): Promise<ApiResponse<RoomTypeImage>> => {
-  try {
-    // First upload to Cloudinary to get the URL
-    const { uploadImageToCloudinary } = await import('@/lib/cloudinary');
-    const imageUrl = await uploadImageToCloudinary(data.image_file);
-    
-    // Then save the URL to the database
-    return await authenticatedPost<ApiResponse<RoomTypeImage>>('/room-type-images/upload', {
-      room_group_room_type_id: data.room_group_room_type_id,
-      image_url: imageUrl,
-      alt_text: data.alt_text,
-      is_primary: data.is_primary
-    });
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to create room type image');
-  }
+  // First upload to Cloudinary to get the URL
+  const { uploadImageToCloudinary } = await import('@/lib/cloudinary');
+  const imageUrl = await uploadImageToCloudinary(data.image_file);
+  
+  // Then save the URL to the database
+  return await authenticatedPost<ApiResponse<RoomTypeImage>>('/room-type-images/upload', {
+    room_group_room_type_id: data.room_group_room_type_id,
+    image_url: imageUrl,
+    alt_text: data.alt_text,
+    is_primary: data.is_primary
+  });
 };
 
 // PUT update room type image with file upload
 export const updateRoomTypeImageWithFile = async (id: number, data: UpdateRoomTypeImageWithFileData): Promise<ApiResponse<RoomTypeImage>> => {
-  try {
-    let imageUrl: string | undefined;
-    
-    // If there's a new file, upload to Cloudinary first
-    if (data.image_file) {
-      const { uploadImageToCloudinary } = await import('@/lib/cloudinary');
-      imageUrl = await uploadImageToCloudinary(data.image_file);
-    }
-    
-    // Then update the database
-    const updateData: any = {
-      alt_text: data.alt_text,
-      is_primary: data.is_primary
-    };
-    
-    if (imageUrl) {
-      updateData.image_url = imageUrl;
-    }
-    
-    return await authenticatedPut<ApiResponse<RoomTypeImage>>(`/room-type-images/${id}/upload`, updateData);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to update room type image');
+  let imageUrl: string | undefined;
+  
+  // If there's a new file, upload to Cloudinary first
+  if (data.image_file) {
+    const { uploadImageToCloudinary } = await import('@/lib/cloudinary');
+    imageUrl = await uploadImageToCloudinary(data.image_file);
   }
+  
+  // Then update the database
+  const updateData: any = {
+    alt_text: data.alt_text,
+    is_primary: data.is_primary
+  };
+  
+  if (imageUrl) {
+    updateData.image_url = imageUrl;
+  }
+  
+  return await authenticatedPut<ApiResponse<RoomTypeImage>>(`/room-type-images/${id}/upload`, updateData);
 };
 
 // PUT set image as primary
 export const setImageAsPrimary = async (id: number): Promise<ApiResponse<void>> => {
-  try {
-    return await authenticatedPut<ApiResponse<void>>(`/room-type-images/${id}/set-primary`);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to set image as primary');
-  }
+  return await authenticatedPut<ApiResponse<void>>(`/room-type-images/${id}/set-primary`);
 };
 
 // DELETE room type image
 export const deleteRoomTypeImage = async (id: number): Promise<ApiResponse<void>> => {
-  try {
-    return await authenticatedDelete<ApiResponse<void>>(`/room-type-images/${id}`);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to delete room type image');
-  }
+  return await authenticatedDelete<ApiResponse<void>>(`/room-type-images/${id}`);
 };

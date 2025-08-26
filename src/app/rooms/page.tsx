@@ -120,7 +120,7 @@ export default function RoomsPage() {
       }
     } catch (error: any) {
       console.error('Error fetching additional data:', error);
-      toast.error('Failed to fetch additional data');
+      toast.error(error.message || 'Failed to fetch additional data');
     } finally {
       setLoadingData(false);
     }

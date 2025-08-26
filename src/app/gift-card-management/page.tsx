@@ -82,7 +82,7 @@ export default function GiftCardManagementPage() {
       }
     } catch (error: any) {
       console.error('Error fetching gift cards:', error);
-      toast.error('Failed to fetch gift cards');
+      toast.error(error.message || 'Failed to fetch gift cards');
     } finally {
       setLoadingData(false);
     }
@@ -96,7 +96,7 @@ export default function GiftCardManagementPage() {
       }
     } catch (error: any) {
       console.error('Error fetching guests:', error);
-      toast.error('Failed to fetch guests');
+      toast.error(error.message || 'Failed to fetch guests');
     }
   };
 

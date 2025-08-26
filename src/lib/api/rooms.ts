@@ -37,63 +37,35 @@ export interface ApiResponse<T> {
 
 // GET all rooms
 export const getRooms = async (): Promise<ApiResponse<Room[]>> => {
-  try {
-    return await authenticatedGet<ApiResponse<Room[]>>('/rooms');
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch rooms');
-  }
+  return await authenticatedGet<ApiResponse<Room[]>>('/rooms');
 };
 
 // GET room by ID
 export const getRoomById = async (id: number): Promise<ApiResponse<Room>> => {
-  try {
-    return await authenticatedGet<ApiResponse<Room>>(`/rooms/${id}`);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch room');
-  }
+  return await authenticatedGet<ApiResponse<Room>>(`/rooms/${id}`);
 };
 
 // GET rooms by hotel
 export const getRoomsByHotel = async (hotel: string): Promise<ApiResponse<Room[]>> => {
-  try {
-    return await authenticatedGet<ApiResponse<Room[]>>(`/rooms/hotel/${hotel}`);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch rooms by hotel');
-  }
+  return await authenticatedGet<ApiResponse<Room[]>>(`/rooms/hotel/${hotel}`);
 };
 
 // GET available rooms
 export const getAvailableRooms = async (): Promise<ApiResponse<Room[]>> => {
-  try {
-    return await authenticatedGet<ApiResponse<Room[]>>('/rooms/status/available');
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch available rooms');
-  }
+  return await authenticatedGet<ApiResponse<Room[]>>('/rooms/status/available');
 };
 
 // POST create new room
 export const createRoom = async (data: CreateRoomData): Promise<ApiResponse<Room>> => {
-  try {
-    return await authenticatedPost<ApiResponse<Room>>('/rooms', data);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to create room');
-  }
+  return await authenticatedPost<ApiResponse<Room>>('/rooms', data);
 };
 
 // PUT update room
 export const updateRoom = async (id: number, data: UpdateRoomData): Promise<ApiResponse<Room>> => {
-  try {
-    return await authenticatedPut<ApiResponse<Room>>(`/rooms/${id}`, data);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to update room');
-  }
+  return await authenticatedPut<ApiResponse<Room>>(`/rooms/${id}`, data);
 };
 
 // DELETE room
 export const deleteRoom = async (id: number): Promise<ApiResponse<void>> => {
-  try {
-    return await authenticatedDelete<ApiResponse<void>>(`/rooms/${id}`);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to delete room');
-  }
+  return await authenticatedDelete<ApiResponse<void>>(`/rooms/${id}`);
 };

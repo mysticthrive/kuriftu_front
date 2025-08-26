@@ -168,7 +168,7 @@ export default function Dashboard() {
 
     } catch (error: any) {
       console.error('Error fetching dashboard data:', error);
-      toast.error('Failed to load dashboard data');
+      toast.error(error.message || 'Failed to load dashboard data');
     } finally {
       setLoadingData(false);
     }

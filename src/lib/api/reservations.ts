@@ -86,60 +86,30 @@ export interface ApiResponse<T> {
 
 // Get all reservations
 export const getReservations = async (): Promise<ApiResponse<Reservation[]>> => {
-  try {
-    return await authenticatedGet<ApiResponse<Reservation[]>>('/reservations');
-  } catch (error: any) {
-    console.error('Error fetching reservations:', error);
-    throw error;
-  }
+  return await authenticatedGet<ApiResponse<Reservation[]>>('/reservations');
 };
 
 // Get single reservation by ID
 export const getReservation = async (id: number): Promise<ApiResponse<Reservation>> => {
-  try {
-    return await authenticatedGet<ApiResponse<Reservation>>(`/reservations/${id}`);
-  } catch (error: any) {
-    console.error('Error fetching reservation:', error);
-    throw error;
-  }
+  return await authenticatedGet<ApiResponse<Reservation>>(`/reservations/${id}`);
 };
 
 // Create new reservation
 export const createReservation = async (data: CreateReservationData): Promise<ApiResponse<Reservation>> => {
-  try {
-    return await authenticatedPost<ApiResponse<Reservation>>('/reservations', data);
-  } catch (error: any) {
-    console.error('Error creating reservation:', error);
-    throw error;
-  }
+  return await authenticatedPost<ApiResponse<Reservation>>('/reservations', data);
 };
 
 // Update reservation
 export const updateReservation = async (id: number, data: UpdateReservationData): Promise<ApiResponse<Reservation>> => {
-  try {
-    return await authenticatedPut<ApiResponse<Reservation>>(`/reservations/${id}`, data);
-  } catch (error: any) {
-    console.error('Error updating reservation:', error);
-    throw error;
-  }
+  return await authenticatedPut<ApiResponse<Reservation>>(`/reservations/${id}`, data);
 };
 
 // Delete reservation (soft delete)
 export const deleteReservation = async (id: number): Promise<ApiResponse<void>> => {
-  try {
-    return await authenticatedDelete<ApiResponse<void>>(`/reservations/${id}`);
-  } catch (error: any) {
-    console.error('Error deleting reservation:', error);
-    throw error;
-  }
+  return await authenticatedDelete<ApiResponse<void>>(`/reservations/${id}`);
 };
 
 // Get rooms list for dropdown
 export const getRoomsList = async (): Promise<ApiResponse<Room[]>> => {
-  try {
-    return await authenticatedGet<ApiResponse<Room[]>>('/reservations/rooms/list');
-  } catch (error: any) {
-    console.error('Error fetching rooms list:', error);
-    throw error;
-  }
+  return await authenticatedGet<ApiResponse<Room[]>>('/reservations/rooms/list');
 };

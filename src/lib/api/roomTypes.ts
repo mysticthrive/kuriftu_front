@@ -32,50 +32,25 @@ export interface ApiResponse<T> {
 
 // Get all room types
 export const getRoomTypes = async (): Promise<ApiResponse<RoomType[]>> => {
-  try {
-    return await authenticatedGet<ApiResponse<RoomType[]>>('/room-types');
-  } catch (error: any) {
-    console.error('Error fetching room types:', error);
-    throw error;
-  }
+  return await authenticatedGet<ApiResponse<RoomType[]>>('/room-types');
 };
 
 // Get single room type by ID
 export const getRoomType = async (id: number): Promise<ApiResponse<RoomType>> => {
-  try {
-    return await authenticatedGet<ApiResponse<RoomType>>(`/room-types/${id}`);
-  } catch (error: any) {
-    console.error('Error fetching room type:', error);
-    throw error;
-  }
+  return await authenticatedGet<ApiResponse<RoomType>>(`/room-types/${id}`);
 };
 
 // Create new room type
 export const createRoomType = async (data: CreateRoomTypeData): Promise<ApiResponse<RoomType>> => {
-  try {
-    return await authenticatedPost<ApiResponse<RoomType>>('/room-types', data);
-  } catch (error: any) {
-    console.error('Error creating room type:', error);
-    throw error;
-  }
+  return await authenticatedPost<ApiResponse<RoomType>>('/room-types', data);
 };
 
 // Update room type
 export const updateRoomType = async (id: number, data: UpdateRoomTypeData): Promise<ApiResponse<RoomType>> => {
-  try {
-    return await authenticatedPut<ApiResponse<RoomType>>(`/room-types/${id}`, data);
-  } catch (error: any) {
-    console.error('Error updating room type:', error);
-    throw error;
-  }
+  return await authenticatedPut<ApiResponse<RoomType>>(`/room-types/${id}`, data);
 };
 
 // Delete room type
 export const deleteRoomType = async (id: number): Promise<ApiResponse<void>> => {
-  try {
-    return await authenticatedDelete<ApiResponse<void>>(`/room-types/${id}`);
-  } catch (error: any) {
-    console.error('Error deleting room type:', error);
-    throw error;
-  }
+  return await authenticatedDelete<ApiResponse<void>>(`/room-types/${id}`);
 };

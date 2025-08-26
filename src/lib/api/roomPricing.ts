@@ -42,74 +42,42 @@ export interface ApiResponse<T> {
 
 // GET all room pricing
 export const getRoomPricing = async (): Promise<ApiResponse<RoomPricing[]>> => {
-  try {
-    return await authenticatedGet<ApiResponse<RoomPricing[]>>('/room-pricing');
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch room pricing');
-  }
+  return await authenticatedGet<ApiResponse<RoomPricing[]>>('/room-pricing');
 };
 
 // GET room pricing by ID
 export const getRoomPricingById = async (id: number): Promise<ApiResponse<RoomPricing>> => {
-  try {
-    return await authenticatedGet<ApiResponse<RoomPricing>>(`/room-pricing/${id}`);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch room pricing');
-  }
+  return await authenticatedGet<ApiResponse<RoomPricing>>(`/room-pricing/${id}`);
 };
 
 // GET pricing by room group room type ID
 export const getRoomPricingByRelationship = async (relationshipId: number): Promise<ApiResponse<RoomPricing[]>> => {
-  try {
-    return await authenticatedGet<ApiResponse<RoomPricing[]>>(`/room-pricing/relationship/${relationshipId}`);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch room pricing by relationship');
-  }
+  return await authenticatedGet<ApiResponse<RoomPricing[]>>(`/room-pricing/relationship/${relationshipId}`);
 };
 
 // GET pricing by hotel
 export const getRoomPricingByHotel = async (hotel: string): Promise<ApiResponse<RoomPricing[]>> => {
-  try {
-    return await authenticatedGet<ApiResponse<RoomPricing[]>>(`/room-pricing/hotel/${hotel}`);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch room pricing by hotel');
-  }
+  return await authenticatedGet<ApiResponse<RoomPricing[]>>(`/room-pricing/hotel/${hotel}`);
 };
 
 // GET pricing by occupancy
 export const getRoomPricingByOccupancy = async (occupancy: string): Promise<ApiResponse<RoomPricing[]>> => {
-  try {
-    return await authenticatedGet<ApiResponse<RoomPricing[]>>(`/room-pricing/occupancy/${occupancy}`);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch room pricing by occupancy');
-  }
+  return await authenticatedGet<ApiResponse<RoomPricing[]>>(`/room-pricing/occupancy/${occupancy}`);
 };
 
 // POST create new room pricing
 export const createRoomPricing = async (data: CreateRoomPricingData): Promise<ApiResponse<RoomPricing>> => {
-  try {
-    return await authenticatedPost<ApiResponse<RoomPricing>>('/room-pricing', data);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to create room pricing');
-  }
+  return await authenticatedPost<ApiResponse<RoomPricing>>('/room-pricing', data);
 };
 
 // PUT update room pricing
 export const updateRoomPricing = async (id: number, data: UpdateRoomPricingData): Promise<ApiResponse<RoomPricing>> => {
-  try {
-    return await authenticatedPut<ApiResponse<RoomPricing>>(`/room-pricing/${id}`, data);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to update room pricing');
-  }
+  return await authenticatedPut<ApiResponse<RoomPricing>>(`/room-pricing/${id}`, data);
 };
 
 // DELETE room pricing
 export const deleteRoomPricing = async (id: number): Promise<ApiResponse<void>> => {
-  try {
-    return await authenticatedDelete<ApiResponse<void>>(`/room-pricing/${id}`);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to delete room pricing');
-  }
+  return await authenticatedDelete<ApiResponse<void>>(`/room-pricing/${id}`);
 };
 
 // GET pricing with filters
@@ -122,16 +90,12 @@ export const getRoomPricingWithFilters = async (filters: {
   start_date?: string;
   end_date?: string;
 }): Promise<ApiResponse<RoomPricing[]>> => {
-  try {
-    const queryParams = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        queryParams.append(key, value.toString());
-      }
-    });
-    
-    return await authenticatedGet<ApiResponse<RoomPricing[]>>(`/room-pricing/filter?${queryParams.toString()}`);
-  } catch (error: any) {
-    throw new Error(error.response?.data?.message || 'Failed to fetch room pricing with filters');
-  }
+  const queryParams = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      queryParams.append(key, value.toString());
+    }
+  });
+  
+  return await authenticatedGet<ApiResponse<RoomPricing[]>>(`/room-pricing/filter?${queryParams.toString()}`);
 };

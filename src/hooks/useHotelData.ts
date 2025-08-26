@@ -28,7 +28,9 @@ export function useHotelData<T>({
         const result = await fetchData(selectedHotel);
         setData(result);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch data');
+        // Use the actual error message from the backend
+        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
+        setError(errorMessage);
         console.error('Error fetching hotel data:', err);
       } finally {
         setLoading(false);
@@ -48,7 +50,9 @@ export function useHotelData<T>({
       const result = await fetchData(selectedHotel);
       setData(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch data');
+      // Use the actual error message from the backend
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
+      setError(errorMessage);
       console.error('Error refetching hotel data:', err);
     } finally {
       setLoading(false);

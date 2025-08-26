@@ -52,8 +52,19 @@ export const authenticatedApiCall = async <T>(
       // Server error (like database connection issues)
       console.error('Server error:', error.response?.data);
       throw new Error('Server error. Please try again later.');
+    } else if (error.response?.data?.message) {
+      // Extract backend error message
+      throw new Error(error.response.data.message);
+    } else if (error.response?.data?.error) {
+      // Alternative error field
+      throw new Error(error.response.data.error);
+    } else if (error.message) {
+      // Use axios error message
+      throw new Error(error.message);
+    } else {
+      // Fallback
+      throw new Error('An unexpected error occurred');
     }
-    throw error;
   }
 };
 

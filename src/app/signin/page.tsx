@@ -39,7 +39,7 @@ export default function SignInPage() {
         toast.error(isLogin ? 'Login failed. Please check your credentials.' : 'Registration failed. Please try again.');
       }
     } catch (error: any) {
-      toast.error(error.message || 'An error occurred');
+      toast.error(error.message || (isLogin ? 'Login failed. Please check your credentials.' : 'Registration failed. Please try again.'));
     } finally {
       setLoading(false);
     }

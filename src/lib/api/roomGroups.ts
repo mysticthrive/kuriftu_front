@@ -28,50 +28,25 @@ export interface ApiResponse<T> {
 
 // Get all room groups
 export const getRoomGroups = async (): Promise<ApiResponse<RoomGroup[]>> => {
-  try {
-    return await authenticatedGet<ApiResponse<RoomGroup[]>>('/room-groups');
-  } catch (error: any) {
-    console.error('Error fetching room groups:', error);
-    throw error;
-  }
+  return await authenticatedGet<ApiResponse<RoomGroup[]>>('/room-groups');
 };
 
 // Get single room group by ID
 export const getRoomGroup = async (id: number): Promise<ApiResponse<RoomGroup>> => {
-  try {
-    return await authenticatedGet<ApiResponse<RoomGroup>>(`/room-groups/${id}`);
-  } catch (error: any) {
-    console.error('Error fetching room group:', error);
-    throw error;
-  }
+  return await authenticatedGet<ApiResponse<RoomGroup>>(`/room-groups/${id}`);
 };
 
 // Create new room group
 export const createRoomGroup = async (data: CreateRoomGroupData): Promise<ApiResponse<RoomGroup>> => {
-  try {
-    return await authenticatedPost<ApiResponse<RoomGroup>>('/room-groups', data);
-  } catch (error: any) {
-    console.error('Error creating room group:', error);
-    throw error;
-  }
+  return await authenticatedPost<ApiResponse<RoomGroup>>('/room-groups', data);
 };
 
 // Update room group
 export const updateRoomGroup = async (id: number, data: UpdateRoomGroupData): Promise<ApiResponse<RoomGroup>> => {
-  try {
-    return await authenticatedPut<ApiResponse<RoomGroup>>(`/room-groups/${id}`, data);
-  } catch (error: any) {
-    console.error('Error updating room group:', error);
-    throw error;
-  }
+  return await authenticatedPut<ApiResponse<RoomGroup>>(`/room-groups/${id}`, data);
 };
 
 // Delete room group
 export const deleteRoomGroup = async (id: number): Promise<ApiResponse<void>> => {
-  try {
-    return await authenticatedDelete<ApiResponse<void>>(`/room-groups/${id}`);
-  } catch (error: any) {
-    console.error('Error deleting room group:', error);
-    throw error;
-  }
+  return await authenticatedDelete<ApiResponse<void>>(`/room-groups/${id}`);
 };
