@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSidebar } from '@/contexts/SidebarContext';
+import { useHotel } from '@/contexts/HotelContext';
+import { useHotelData } from '@/hooks/useHotelData';
 import Sidebar from '@/components/Sidebar';
 import toast from 'react-hot-toast';
 import { 
@@ -21,9 +23,10 @@ import {
   X,
   Check,
   AlertCircle,
-  DollarSign
+  DollarSign,
+  RefreshCw
 } from 'lucide-react';
-import { getRooms, createRoom, updateRoom, deleteRoom, Room, CreateRoomData } from '@/lib/api/rooms';
+import { getRooms, createRoom, updateRoom, deleteRoom, Room, CreateRoomData, getRoomsByHotel } from '@/lib/api/rooms';
 import { getRoomGroups } from '@/lib/api/roomGroups';
 import { getRoomTypes } from '@/lib/api/roomTypes';
 import { getRoomTypeImages, RoomTypeImage } from '@/lib/api/roomTypeImages';
@@ -31,14 +34,6 @@ import { getRoomPricing, RoomPricing } from '@/lib/api/roomPricing';
 import { RoomGroup } from '@/lib/api/roomGroups';
 import { RoomType } from '@/lib/api/roomTypes';
 import Pagination from '@/components/Pagination';
-
-const hotelOptions = [
-  { value: 'africanVillage', label: 'Kuriftu African Village' },
-  { value: 'bishoftu', label: 'Bishoftu' },
-  { value: 'entoto', label: 'Entoto' },
-  { value: 'laketana', label: 'Lake Tana' },
-  { value: 'awashfall', label: 'Awash' }
-];
 
 const statusOptions = [
   { value: 'available', label: 'Available', color: 'bg-green-100 text-green-800' },
@@ -50,17 +45,27 @@ const statusOptions = [
 
 export default function RoomsPage() {
   const { user, loading } = useAuth();
-  const router = useRouter();
   const { toggleSidebar } = useSidebar();
-  
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const { selectedHotel, getCurrentHotel } = useHotel();
+  const router = useRouter();
+
+  // Use the hotel data hook to fetch rooms based on selected hotel
+  const { 
+    data: rooms, 
+    loading: roomsLoading, 
+    error: roomsError, 
+    refetch: refetchRooms 
+  } = useHotelData({
+    fetchData: (hotelId) => getRoomsByHotel(hotelId),
+    enabled: !!user
+  });
+
   const [roomGroups, setRoomGroups] = useState<RoomGroup[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [roomImages, setRoomImages] = useState<RoomTypeImage[]>([]);
   const [roomPricing, setRoomPricing] = useState<RoomPricing[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedHotel, setSelectedHotel] = useState<string>('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [showModal, setShowModal] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
@@ -72,7 +77,7 @@ export default function RoomsPage() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [formData, setFormData] = useState<CreateRoomData>({
-    hotel: 'africanVillage',
+    hotel: selectedHotel as any,
     room_number: '',
     room_type_id: undefined,
     room_group_id: undefined,
@@ -87,24 +92,20 @@ export default function RoomsPage() {
 
   useEffect(() => {
     if (user) {
-      fetchData();
+      fetchAdditionalData();
     }
   }, [user]);
 
-  const fetchData = async () => {
+  const fetchAdditionalData = async () => {
     try {
       setLoadingData(true);
-      const [roomsRes, roomGroupsRes, roomTypesRes, imagesRes, pricingRes] = await Promise.all([
-        getRooms(),
+      const [roomGroupsRes, roomTypesRes, imagesRes, pricingRes] = await Promise.all([
         getRoomGroups(),
         getRoomTypes(),
         getRoomTypeImages(),
         getRoomPricing()
       ]);
       
-      if (roomsRes.success && roomsRes.data) {
-        setRooms(roomsRes.data);
-      }
       if (pricingRes.success && pricingRes.data) {
         setRoomPricing(pricingRes.data);
       }
@@ -118,8 +119,8 @@ export default function RoomsPage() {
         setRoomImages(imagesRes.data);
       }
     } catch (error: any) {
-      console.error('Error fetching data:', error);
-      toast.error('Failed to fetch data');
+      console.error('Error fetching additional data:', error);
+      toast.error('Failed to fetch additional data');
     } finally {
       setLoadingData(false);
     }
@@ -143,15 +144,15 @@ export default function RoomsPage() {
           setShowModal(false);
           setEditingRoom(null);
           resetForm();
-          fetchData();
+          refetchRooms();
         }
       } else {
         const response = await createRoom(formData);
         if (response.success) {
-          toast.success('Room created successfully');
-          setShowModal(false);
-          resetForm();
-          fetchData();
+                  toast.success('Room created successfully');
+        setShowModal(false);
+        resetForm();
+        refetchRooms();
         }
       }
     } catch (error: any) {
@@ -183,7 +184,7 @@ export default function RoomsPage() {
         toast.success('Room deleted successfully');
         setShowDeleteModal(false);
         setDeletingRoom(null);
-        fetchData();
+        refetchRooms();
       }
     } catch (error: any) {
       console.error('Error deleting room:', error);
@@ -193,7 +194,7 @@ export default function RoomsPage() {
 
   const resetForm = () => {
     setFormData({
-      hotel: 'africanVillage',
+      hotel: selectedHotel as any,
       room_number: '',
       room_type_id: undefined,
       room_group_id: undefined,
@@ -213,15 +214,14 @@ export default function RoomsPage() {
     resetForm();
   };
 
-  const filteredRooms = rooms.filter(room => {
+  const filteredRooms = rooms?.data?.filter((room: Room) => {
     const matchesSearch = room.room_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          room.type_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          room.group_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesHotel = !selectedHotel || room.hotel === selectedHotel;
     const matchesStatus = !selectedStatus || room.status === selectedStatus;
     
-    return matchesSearch && matchesHotel && matchesStatus;
-  });
+    return matchesSearch && matchesStatus;
+  }) || [];
 
   // Pagination logic
   const totalItems = filteredRooms.length;
@@ -249,8 +249,7 @@ export default function RoomsPage() {
   };
 
   const getHotelDisplayName = (hotel: string) => {
-    const hotelOption = hotelOptions.find(option => option.value === hotel);
-    return hotelOption?.label || hotel;
+    return hotel;
   };
 
   const getRoomImage = (room: Room) => {
@@ -337,18 +336,9 @@ export default function RoomsPage() {
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-                <select
-                  value={selectedHotel}
-                  onChange={(e) => setSelectedHotel(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">All Hotels</option>
-                  {hotelOptions.map(hotel => (
-                    <option key={hotel.value} value={hotel.value}>
-                      {hotel.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
+                  {getCurrentHotel()?.label || 'Select Hotel'}
+                </div>
                 <select
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
@@ -364,7 +354,6 @@ export default function RoomsPage() {
                 <button
                   onClick={() => {
                     setSearchTerm('');
-                    setSelectedHotel('');
                     setSelectedStatus('');
                   }}
                   className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
@@ -556,18 +545,9 @@ export default function RoomsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Hotel *
                 </label>
-                <select
-                  value={formData.hotel}
-                  onChange={(e) => setFormData({ ...formData, hotel: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  {hotelOptions.map(hotel => (
-                    <option key={hotel.value} value={hotel.value}>
-                      {hotel.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
+                  {getCurrentHotel()?.label || 'Select Hotel'}
+                </div>
               </div>
 
               <div>

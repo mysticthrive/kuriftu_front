@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSidebar } from '@/contexts/SidebarContext';
+import { useHotel } from '@/contexts/HotelContext';
 import toast from 'react-hot-toast';
 import { getMenuItemsByRole, MenuItem as ApiMenuItem } from '@/lib/api/menuPermissions';
 import { sortMenuItems, sortChildrenByOrder } from '@/lib/utils/menuSorting';
@@ -59,22 +60,14 @@ export default function Sidebar() {
   const [collapsedSections, setCollapsedSections] = useState<string[]>([]);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [hotelDropdownOpen, setHotelDropdownOpen] = useState(false);
-  const [selectedHotel, setSelectedHotel] = useState('africanVillage');
   const [menuItems, setMenuItems] = useState<ApiMenuItem[]>([]);
   const [loadingMenu, setLoadingMenu] = useState(true);
   const { user, signOut } = useAuth();
   const { collapsed, toggleSidebar } = useSidebar();
+  const { selectedHotel, hotels, setSelectedHotel, getCurrentHotel, isLoading: hotelLoading } = useHotel();
   const userDropdownRef = useRef<HTMLDivElement>(null);
   const hotelDropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-
-  const hotels = [
-    { value: 'africanVillage', label: 'African Village', shortLabel: 'African Village' },
-    { value: 'bishoftu', label: 'Bishoftu', shortLabel: 'Bishoftu' },
-    { value: 'entoto', label: 'Entoto', shortLabel: 'Entoto' },
-    { value: 'laketana', label: 'Lake Tana', shortLabel: 'Lake Tana' },
-    { value: 'awashfall', label: 'Awash Fall', shortLabel: 'Awash Fall' }
-  ];
 
   // Fetch menu items from database based on user role
   useEffect(() => {
@@ -274,11 +267,6 @@ export default function Sidebar() {
   const handleHotelSelect = (hotelValue: string) => {
     setSelectedHotel(hotelValue);
     setHotelDropdownOpen(false);
-    toast.success(`Switched to ${hotels.find(h => h.value === hotelValue)?.label}`);
-  };
-
-  const getCurrentHotel = () => {
-    return hotels.find(h => h.value === selectedHotel);
   };
 
   const getIconComponent = (iconName: string) => {
@@ -527,13 +515,19 @@ export default function Sidebar() {
                 >
                   <div className="flex items-center">
                     <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">
-                        {getCurrentHotel()?.label.charAt(0) || 'H'}
-                      </span>
+                      {hotelLoading ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <span className="text-white font-bold text-sm">
+                          {getCurrentHotel()?.label.charAt(0) || 'H'}
+                        </span>
+                      )}
                     </div>
                     <div className="ml-3">
                       <div className="text-sm font-medium text-gray-900">{getCurrentHotel()?.shortLabel}</div>
-                      <div className="text-xs text-gray-500">Select Hotel</div>
+                      <div className="text-xs text-gray-500">
+                        {hotelLoading ? 'Refreshing data...' : 'Select Hotel'}
+                      </div>
                     </div>
                   </div>
                   <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${hotelDropdownOpen ? 'rotate-180' : ''}`} />
