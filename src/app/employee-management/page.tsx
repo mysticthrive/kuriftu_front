@@ -35,8 +35,6 @@ const getUsers = async () => {
   return response.json();
 };
 
-
-
 const updateUser = async (id: number, userData: UpdateUserRequest) => {
   const token = localStorage.getItem('token');
   const response = await fetch(`${API_BASE_URL}/users/${id}`, {
@@ -49,10 +47,6 @@ const updateUser = async (id: number, userData: UpdateUserRequest) => {
   });
   return response.json();
 };
-
-
-
-
 
 export default function EmployeeManagementPage() {
   const { user, loading } = useAuth();
@@ -71,7 +65,6 @@ export default function EmployeeManagementPage() {
   const [submitting, setSubmitting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-
 
   useEffect(() => {
     if (!loading && !user) {
@@ -135,10 +128,9 @@ export default function EmployeeManagementPage() {
     
     try {
       setSubmitting(true);
-      
-             const updateData: UpdateUserRequest = {
-         role: formData.role
-       };
+      const updateData: UpdateUserRequest = {
+        role: formData.role
+      };
       
       const response = await updateUser(editingEmployee.id, updateData);
       
@@ -158,10 +150,6 @@ export default function EmployeeManagementPage() {
     }
   };
 
-
-
-
-
   const openEditModal = (employee: UserType) => {
     setEditingEmployee(employee);
     setFormData({
@@ -170,10 +158,6 @@ export default function EmployeeManagementPage() {
     setFormErrors({});
     setShowModal(true);
   };
-
-
-
-
 
   const filteredEmployees = employees.filter(employee => {
     // If current user is Admin, hide Admin users from the table
