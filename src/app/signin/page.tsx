@@ -36,9 +36,11 @@ export default function SignInPage() {
         toast.success(isLogin ? 'Login successful!' : 'Registration successful!');
         router.push('/dashboard');
       } else {
+        // This case should not happen anymore since we're re-throwing errors
         toast.error(isLogin ? 'Login failed. Please check your credentials.' : 'Registration failed. Please try again.');
       }
     } catch (error: any) {
+      // Now this will show the actual backend error message
       toast.error(error.message || (isLogin ? 'Login failed. Please check your credentials.' : 'Registration failed. Please try again.'));
     } finally {
       setLoading(false);

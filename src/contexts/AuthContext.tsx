@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     } catch (error) {
       console.error('Sign in failed:', error);
-      return false;
+      throw error; // Re-throw the error so it can be handled in the component
     }
   };
 
@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     } catch (error) {
       console.error('Sign up failed:', error);
-      return false;
+      throw error; // Re-throw the error so it can be handled in the component
     }
   };
 

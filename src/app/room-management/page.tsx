@@ -105,7 +105,7 @@ export default function RoomManagementPage() {
       }
     } catch (error: any) {
       console.error('Error assigning room types:', error);
-      toast.error('Failed to assign room types');
+      toast.error(error.message || 'Failed to assign room types');
     } finally {
       setSubmitting(false);
     }
@@ -127,7 +127,7 @@ export default function RoomManagementPage() {
       }
     } catch (error: any) {
       console.error('Error removing relationship:', error);
-      toast.error('Failed to remove relationship');
+      toast.error(error.message || 'Failed to remove relationship');
     }
   };
 
