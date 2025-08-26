@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { 
   getRoomPricing, 
+  getRoomPricingByHotel,
   createRoomPricing, 
   updateRoomPricing, 
   deleteRoomPricing, 
@@ -35,18 +36,30 @@ import {
   CreateRoomPricingData 
 } from '@/lib/api/roomPricing';
 import { getRoomGroupRoomTypes } from '@/lib/api/roomGroupRoomTypes';
+import { useHotel } from '@/contexts/HotelContext';
+import { useHotelData } from '@/hooks/useHotelData';
 import Pagination from '@/components/Pagination';
 
 export default function RoomPricingPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { toggleSidebar } = useSidebar();
+  const { hotels, selectedHotel, getCurrentHotel } = useHotel();
+
+  // Use the hotel data hook to fetch pricing based on selected hotel
+  const { 
+    data: pricingResponse, 
+    loading: pricingLoading, 
+    error: pricingError, 
+    refetch: refetchPricing 
+  } = useHotelData({
+    fetchData: (hotelId) => getRoomPricingByHotel(hotelId),
+    enabled: !!user
+  });
   
-  const [pricing, setPricing] = useState<RoomPricing[]>([]);
   const [relationships, setRelationships] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedHotel, setSelectedHotel] = useState<string>('');
   const [selectedOccupancy, setSelectedOccupancy] = useState<string>('');
   const [selectedRelationship, setSelectedRelationship] = useState<string>('');
   const [showModal, setShowModal] = useState(false);
@@ -60,7 +73,7 @@ export default function RoomPricingPage() {
 
   const [formData, setFormData] = useState<CreateRoomPricingData>({
     room_group_room_type_id: 0,
-    hotel: 'africanVillage',
+    hotel: selectedHotel,
     occupancy: 'single',
     day_of_week: undefined,
     month: undefined,
@@ -69,14 +82,6 @@ export default function RoomPricingPage() {
     end_date: '',
     price: 0
   });
-
-  const hotels = [
-    { value: 'africanVillage', label: 'African Village' },
-    { value: 'bishoftu', label: 'Bishoftu' },
-    { value: 'entoto', label: 'Entoto' },
-    { value: 'laketana', label: 'Lake Tana' },
-    { value: 'awashfall', label: 'Awash Fall' }
-  ];
 
   const occupancies = [
     { value: 'single', label: 'Single' },
@@ -122,17 +127,19 @@ export default function RoomPricingPage() {
     }
   }, [user]);
 
+  // Update formData hotel when selectedHotel changes
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      hotel: selectedHotel
+    }));
+  }, [selectedHotel]);
+
   const fetchData = async () => {
     try {
       setLoadingData(true);
-      const [pricingRes, relationshipsRes] = await Promise.all([
-        getRoomPricing(),
-        getRoomGroupRoomTypes()
-      ]);
+      const relationshipsRes = await getRoomGroupRoomTypes();
       
-      if (pricingRes.success && pricingRes.data) {
-        setPricing(pricingRes.data);
-      }
       if (relationshipsRes.success && relationshipsRes.data) {
         setRelationships(relationshipsRes.data);
       }
@@ -176,7 +183,7 @@ export default function RoomPricingPage() {
           setShowModal(false);
           setEditingPricing(null);
           resetForm();
-          fetchData();
+          refetchPricing();
         }
       } else {
         const response = await createRoomPricing(apiData);
@@ -184,7 +191,7 @@ export default function RoomPricingPage() {
           toast.success('Pricing added successfully');
           setShowModal(false);
           resetForm();
-          fetchData();
+          refetchPricing();
         }
       }
     } catch (error: any) {
@@ -228,7 +235,7 @@ export default function RoomPricingPage() {
         toast.success('Pricing deleted successfully');
         setShowDeleteModal(false);
         setDeletingPricing(null);
-        fetchData();
+        refetchPricing();
       }
     } catch (error: any) {
       console.error('Error deleting pricing:', error);
@@ -239,7 +246,7 @@ export default function RoomPricingPage() {
   const resetForm = () => {
     setFormData({
       room_group_room_type_id: 0,
-      hotel: 'africanVillage',
+      hotel: selectedHotel,
       occupancy: 'single',
       day_of_week: undefined,
       month: undefined,
@@ -262,16 +269,15 @@ export default function RoomPricingPage() {
     resetForm();
   };
 
-  const filteredPricing = pricing.filter(item => {
+  const filteredPricing = (pricingResponse?.data || []).filter(item => {
     const matchesSearch = item.group_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.type_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.hotel.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.occupancy.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesHotel = !selectedHotel || item.hotel === selectedHotel;
     const matchesOccupancy = !selectedOccupancy || item.occupancy === selectedOccupancy;
     const matchesRelationship = !selectedRelationship || item.room_group_room_type_id.toString() === selectedRelationship;
     
-    return matchesSearch && matchesHotel && matchesOccupancy && matchesRelationship;
+    return matchesSearch && matchesOccupancy && matchesRelationship;
   });
 
   // Pagination logic
@@ -376,18 +382,9 @@ export default function RoomPricingPage() {
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
                 </div>
-                <select
-                  value={selectedHotel}
-                  onChange={(e) => setSelectedHotel(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  <option value="">All Hotels</option>
-                  {hotels.map(hotel => (
-                    <option key={hotel.value} value={hotel.value}>
-                      {hotel.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
+                  {getCurrentHotel()?.label || 'Select Hotel'}
+                </div>
                 <select
                   value={selectedOccupancy}
                   onChange={(e) => setSelectedOccupancy(e.target.value)}
@@ -418,7 +415,6 @@ export default function RoomPricingPage() {
                 <button
                   onClick={() => {
                     setSearchTerm('');
-                    setSelectedHotel('');
                     setSelectedOccupancy('');
                     setSelectedRelationship('');
                   }}
@@ -432,7 +428,7 @@ export default function RoomPricingPage() {
 
             {/* Pricing Table */}
             <div className="bg-white rounded-lg shadow overflow-hidden">
-              {loadingData ? (
+              {pricingLoading || loadingData ? (
                 <div className="p-8 text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
                   <p className="mt-2 text-gray-500">Loading pricing data...</p>
@@ -606,18 +602,9 @@ export default function RoomPricingPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Hotel *
                   </label>
-                  <select
-                    value={formData.hotel}
-                    onChange={(e) => setFormData({ ...formData, hotel: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    required
-                  >
-                    {hotels.map(hotel => (
-                      <option key={hotel.value} value={hotel.value}>
-                        {hotel.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
+                    {getCurrentHotel()?.label || 'Select Hotel'}
+                  </div>
                 </div>
 
                 <div>

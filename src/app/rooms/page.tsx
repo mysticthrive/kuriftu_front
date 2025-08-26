@@ -46,7 +46,7 @@ const statusOptions = [
 export default function RoomsPage() {
   const { user, loading } = useAuth();
   const { toggleSidebar } = useSidebar();
-  const { selectedHotel, getCurrentHotel } = useHotel();
+  const { selectedHotel, getCurrentHotel, hotels } = useHotel();
   const router = useRouter();
 
   // Use the hotel data hook to fetch rooms based on selected hotel
@@ -95,6 +95,14 @@ export default function RoomsPage() {
       fetchAdditionalData();
     }
   }, [user]);
+
+  // Update formData hotel when selectedHotel changes
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      hotel: selectedHotel as any
+    }));
+  }, [selectedHotel]);
 
   const fetchAdditionalData = async () => {
     try {
@@ -249,7 +257,8 @@ export default function RoomsPage() {
   };
 
   const getHotelDisplayName = (hotel: string) => {
-    return hotel;
+    const hotelObj = hotels?.find(h => h.value === hotel);
+    return hotelObj ? hotelObj.label : hotel;
   };
 
   const getRoomImage = (room: Room) => {
