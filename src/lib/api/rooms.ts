@@ -9,20 +9,16 @@ export interface Room {
   status: 'available' | 'occupied' | 'maintenance' | 'hold' | 'booked';
   created_at: string;
   updated_at: string;
-  room_type_id?: number;
-  type_name?: string;
-  type_description?: string;
-  max_occupancy?: number;
-  room_group_id?: number;
+  room_group_room_type_id?: number;
   group_name?: string;
-  group_description?: string;
+  type_name?: string;
+  max_occupancy?: number;
 }
 
 export interface CreateRoomData {
   hotel: string;
   room_number: string;
-  room_type_id?: number;
-  room_group_id?: number;
+  room_group_room_type_id?: number;
   status: 'available' | 'occupied' | 'maintenance' | 'hold' | 'booked';
 }
 

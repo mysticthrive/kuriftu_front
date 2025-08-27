@@ -27,12 +27,9 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { getRooms, createRoom, updateRoom, deleteRoom, Room, CreateRoomData, getRoomsByHotel } from '@/lib/api/rooms';
-import { getRoomGroups } from '@/lib/api/roomGroups';
-import { getRoomTypes } from '@/lib/api/roomTypes';
-import { getRoomTypeImages, RoomTypeImage } from '@/lib/api/roomTypeImages';
+import { getRoomGroupRoomTypes } from '@/lib/api/roomGroupRoomTypes';
 import { getRoomPricing, RoomPricing } from '@/lib/api/roomPricing';
-import { RoomGroup } from '@/lib/api/roomGroups';
-import { RoomType } from '@/lib/api/roomTypes';
+import { getRoomTypeImages, RoomTypeImage } from '@/lib/api/roomTypeImages';
 import Pagination from '@/components/Pagination';
 
 const statusOptions = [
@@ -60,10 +57,7 @@ export default function RoomsPage() {
     enabled: !!user
   });
 
-  const [roomGroups, setRoomGroups] = useState<RoomGroup[]>([]);
-  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
-  const [roomImages, setRoomImages] = useState<RoomTypeImage[]>([]);
-  const [roomPricing, setRoomPricing] = useState<RoomPricing[]>([]);
+
   const [loadingData, setLoadingData] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
@@ -79,10 +73,13 @@ export default function RoomsPage() {
   const [formData, setFormData] = useState<CreateRoomData>({
     hotel: selectedHotel,
     room_number: '',
-    room_type_id: undefined,
-    room_group_id: undefined,
+    room_group_room_type_id: undefined,
     status: 'available'
   });
+
+  const [relationships, setRelationships] = useState<any[]>([]);
+  const [roomPricing, setRoomPricing] = useState<RoomPricing[]>([]);
+  const [roomImages, setRoomImages] = useState<RoomTypeImage[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -92,9 +89,35 @@ export default function RoomsPage() {
 
   useEffect(() => {
     if (user) {
-      fetchAdditionalData();
+      fetchRelationships();
     }
   }, [user]);
+
+  const fetchRelationships = async () => {
+    try {
+      const [relationshipsRes, pricingRes, imagesRes] = await Promise.all([
+        getRoomGroupRoomTypes(),
+        getRoomPricing(),
+        getRoomTypeImages()
+      ]);
+      
+      if (relationshipsRes.success && relationshipsRes.data) {
+        setRelationships(relationshipsRes.data);
+      }
+      if (pricingRes.success && pricingRes.data) {
+        setRoomPricing(pricingRes.data);
+      }
+      if (imagesRes.success && imagesRes.data) {
+        setRoomImages(imagesRes.data);
+        console.log('Room images loaded:', imagesRes.data.length);
+      }
+    } catch (error: any) {
+      console.error('Error fetching data:', error);
+      toast.error(error.message || 'Failed to fetch data');
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   // Update formData hotel when selectedHotel changes
   useEffect(() => {
@@ -104,35 +127,7 @@ export default function RoomsPage() {
     }));
   }, [selectedHotel]);
 
-  const fetchAdditionalData = async () => {
-    try {
-      setLoadingData(true);
-      const [roomGroupsRes, roomTypesRes, imagesRes, pricingRes] = await Promise.all([
-        getRoomGroups(),
-        getRoomTypes(),
-        getRoomTypeImages(),
-        getRoomPricing()
-      ]);
-      
-      if (pricingRes.success && pricingRes.data) {
-        setRoomPricing(pricingRes.data);
-      }
-      if (roomGroupsRes.success && roomGroupsRes.data) {
-        setRoomGroups(roomGroupsRes.data);
-      }
-      if (roomTypesRes.success && roomTypesRes.data) {
-        setRoomTypes(roomTypesRes.data);
-      }
-      if (imagesRes.success && imagesRes.data) {
-        setRoomImages(imagesRes.data);
-      }
-    } catch (error: any) {
-      console.error('Error fetching additional data:', error);
-      toast.error(error.message || 'Failed to fetch additional data');
-    } finally {
-      setLoadingData(false);
-    }
-  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,8 +171,7 @@ export default function RoomsPage() {
     setFormData({
       hotel: room.hotel,
       room_number: room.room_number,
-      room_type_id: room.room_type_id || undefined,
-      room_group_id: room.room_group_id || undefined,
+      room_group_room_type_id: room.room_group_room_type_id,
       status: room.status
     });
     setShowModal(true);
@@ -204,8 +198,7 @@ export default function RoomsPage() {
     setFormData({
       hotel: selectedHotel,
       room_number: '',
-      room_type_id: undefined,
-      room_group_id: undefined,
+      room_group_room_type_id: undefined,
       status: 'available'
     });
   };
@@ -262,28 +255,51 @@ export default function RoomsPage() {
   };
 
   const getRoomImage = (room: Room) => {
-    // Find the image that matches the room's group and type combination
-    if (room.room_group_id && room.room_type_id) {
+    // Find the primary image that matches the room's group and type combination
+    if (room.room_group_room_type_id && roomImages.length > 0) {
+      console.log('Looking for image for room:', room.room_number, 'relationship:', room.room_group_room_type_id);
+      console.log('Available images:', roomImages.map(img => ({ id: img.room_group_room_type_id, isPrimary: img.is_primary })));
+      
       const image = roomImages.find(img => 
-        img.group_name === room.group_name && 
-        img.type_name === room.type_name
+        img.room_group_room_type_id === room.room_group_room_type_id && 
+        img.is_primary
       );
-      return image?.image_url;
+      
+      // If no primary image found, try to get any image for this relationship
+      if (!image) {
+        const anyImage = roomImages.find(img => 
+          img.room_group_room_type_id === room.room_group_room_type_id
+        );
+        console.log('Found any image:', anyImage?.image_url);
+        return anyImage?.image_url || null;
+      }
+      
+      console.log('Found primary image:', image.image_url);
+      return image.image_url || null;
     }
+    console.log('No room relationship or no images loaded');
     return null;
   };
 
   const getRoomPrice = (room: Room) => {
-    if (!room.room_type_id || !room.room_group_id) return null;
+    if (!room.room_group_room_type_id) return null;
     
-    // Find pricing for this room's hotel and type
-    // We'll look for single occupancy pricing as default
-    const pricing = roomPricing.find(p => 
+    // Find pricing for this room's hotel and relationship
+    // We'll look for weekdays pricing as default, then weekends if not found
+    let pricing = roomPricing.find(p => 
       p.hotel === room.hotel && 
-      p.occupancy === 1 &&
-      // Try to match by room type first, then by group if available
-      (p.group_name === room.group_name || p.type_name === room.type_name)
+      p.room_group_room_type_id === room.room_group_room_type_id &&
+      p.day_of_week === 'weekdays'
     );
+    
+    // If no weekdays pricing, try weekends
+    if (!pricing) {
+      pricing = roomPricing.find(p => 
+        p.hotel === room.hotel && 
+        p.room_group_room_type_id === room.room_group_room_type_id &&
+        p.day_of_week === 'weekends'
+      );
+    }
     
     return pricing?.price || null;
   };
@@ -397,7 +413,7 @@ export default function RoomsPage() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Room
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Resort
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -445,19 +461,12 @@ export default function RoomsPage() {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <Bed className="w-4 h-4 text-gray-400 mr-2" />
-                              <div>
-                                <div className="text-sm font-medium text-gray-900">
-                                  {room.room_number}
-                                </div>
-                                {room.max_occupancy && (
-                                  <div className="text-xs text-gray-500">
-                                    Max: {room.max_occupancy} guests
-                                  </div>
-                                )}
+                              <div className="text-sm font-medium text-gray-900">
+                                {room.room_number}
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                                                    <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <Hotel className="w-4 h-4 text-gray-400 mr-2" />
                               <span className="text-sm text-gray-900">
@@ -575,35 +584,17 @@ export default function RoomsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Room Type
+                  Room Group - Room Type
                 </label>
                 <select
-                  value={formData.room_type_id || ''}
-                  onChange={(e) => setFormData({ ...formData, room_type_id: e.target.value ? Number(e.target.value) : undefined })}
+                  value={formData.room_group_room_type_id || ''}
+                  onChange={(e) => setFormData({ ...formData, room_group_room_type_id: e.target.value ? Number(e.target.value) : undefined })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="">Select room type</option>
-                  {roomTypes.map(type => (
-                    <option key={type.room_type_id} value={type.room_type_id}>
-                      {type.type_name} (Max: {type.max_occupancy})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Room Group
-                </label>
-                <select
-                  value={formData.room_group_id || ''}
-                  onChange={(e) => setFormData({ ...formData, room_group_id: e.target.value ? Number(e.target.value) : undefined })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select room group</option>
-                  {roomGroups.map(group => (
-                    <option key={group.room_group_id} value={group.room_group_id}>
-                      {group.group_name}
+                  <option value="">Select room group and type</option>
+                  {relationships.map(rel => (
+                    <option key={rel.id} value={rel.id}>
+                      {rel.group_name} - {rel.type_name}
                     </option>
                   ))}
                 </select>
