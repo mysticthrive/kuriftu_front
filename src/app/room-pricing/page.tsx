@@ -143,6 +143,17 @@ export default function RoomPricingPage() {
           refetchPricing();
         }
       } else {
+        // Check for existing pricing with same relationship and day of week
+        const existingPricing = pricingResponse?.data?.find(p => 
+          p.room_group_room_type_id === formData.room_group_room_type_id && 
+          p.day_of_week === formData.day_of_week
+        );
+        
+        if (existingPricing) {
+          toast.error('Pricing already exists for this room type and day of week combination');
+          return;
+        }
+        
         const response = await createRoomPricing(formData);
         if (response.success) {
           toast.success('Pricing added successfully');
