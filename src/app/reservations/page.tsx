@@ -489,6 +489,45 @@ export default function ReservationsPage() {
     return rooms.find(room => room.room_id === formData.room_id)?.max_occupancy || null;
   };
 
+  // Calculate children pricing breakdown
+  const calculateChildrenPricingBreakdown = (childrenAges: string, nights: number) => {
+    if (!childrenAges || !nights) return { bedPrice: 0, breakfastPrice: 0, breakdown: [] };
+    
+    const ages = childrenAges.split(',').map(age => parseInt(age.trim())).filter(age => !isNaN(age));
+    let totalBedPrice = 0;
+    let totalBreakfastPrice = 0;
+    const breakdown: Array<{age: number, bedPrice: number, breakfastPrice: number}> = [];
+    
+    ages.forEach(age => {
+      let bedPrice = 0;
+      let breakfastPrice = 0;
+      
+      // Bed pricing
+      if (age >= 3 && age <= 11) {
+        bedPrice = 20; // USD 20 for ages 3-11
+      } else if (age >= 12 && age <= 17) {
+        bedPrice = 40; // USD 40 for ages 12-17
+      }
+      
+      // Breakfast pricing
+      if (age >= 6 && age <= 12) {
+        breakfastPrice = 15; // USD 15 for ages 6-12
+      } else if (age > 12) {
+        breakfastPrice = 18; // USD 18 for ages above 12
+      }
+      
+      totalBedPrice += bedPrice;
+      totalBreakfastPrice += breakfastPrice;
+      breakdown.push({ age, bedPrice, breakfastPrice });
+    });
+    
+    return {
+      bedPrice: totalBedPrice * nights,
+      breakfastPrice: totalBreakfastPrice * nights,
+      breakdown
+    };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -667,6 +706,20 @@ export default function ReservationsPage() {
                                 <div className="text-sm text-gray-500">
                                   {reservation.num_adults} adults, {reservation.num_children || 0} children
                                 </div>
+                                {reservation.children_ages && reservation.num_children > 0 && (
+                                  <div className="text-xs text-gray-400 mt-1">
+                                    {(() => {
+                                      const checkInDate = new Date(reservation.check_in_date);
+                                      const checkOutDate = new Date(reservation.check_out_date);
+                                      const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+                                      const childrenPricing = calculateChildrenPricingBreakdown(reservation.children_ages || '', nights);
+                                      if (childrenPricing.bedPrice > 0 || childrenPricing.breakfastPrice > 0) {
+                                        return `Children: Bed $${childrenPricing.bedPrice.toFixed(2)} | Breakfast $${childrenPricing.breakfastPrice.toFixed(2)}`;
+                                      }
+                                      return '';
+                                    })()}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </td>
@@ -1058,6 +1111,34 @@ export default function ReservationsPage() {
                       Format: Enter whole numbers separated by commas, no spaces or decimals (e.g., 5,8,12)
                     </p>
                   )}
+                  {!formErrors.children_ages && formData.children_ages && formData.check_in_date && formData.check_out_date && (
+                    <div className="mt-2 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <p className="text-sm font-medium text-green-800 mb-1">Children Pricing Preview:</p>
+                      {(() => {
+                        const checkInDate = new Date(formData.check_in_date);
+                        const checkOutDate = new Date(formData.check_out_date);
+                        const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+                        const childrenPricing = calculateChildrenPricingBreakdown(formData.children_ages, nights);
+                        if (childrenPricing.bedPrice > 0 || childrenPricing.breakfastPrice > 0) {
+                          return (
+                            <div className="text-xs text-green-700 space-y-1">
+                              <p><strong>Total for {nights} nights:</strong></p>
+                              <p>Bed: ${childrenPricing.bedPrice.toFixed(2)} | Breakfast: ${childrenPricing.breakfastPrice.toFixed(2)}</p>
+                              <p><strong>Total Children Cost:</strong> ${(childrenPricing.bedPrice + childrenPricing.breakfastPrice).toFixed(2)}</p>
+                            </div>
+                          );
+                        }
+                        return <p className="text-xs text-green-700">No additional charges for children under 3 years old</p>;
+                      })()}
+                    </div>
+                  )}
+                  <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm font-medium text-blue-800 mb-1">Children Pricing:</p>
+                    <div className="text-xs text-blue-700 space-y-1">
+                      <p><strong>Bed:</strong> Ages 3-11: $20/night | Ages 12-17: $40/night</p>
+                      <p><strong>Breakfast:</strong> Ages 6-12: $15/night | Ages 13+: $18/night</p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="md:col-span-2">
