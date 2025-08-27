@@ -662,7 +662,7 @@ export default function ReservationsPage() {
                               <CreditCard className="w-4 h-4 text-gray-400 mr-2" />
                               <div>
                                 <div className="text-sm font-semibold text-green-600">
-                                  {Number(reservation.total_price).toFixed(2)}
+                                  {reservation.total_price && reservation.total_price > 0 ? `$${Number(reservation.total_price).toFixed(2)}` : 'Price not set'}
                                 </div>
                                 <div className="text-sm text-gray-500">
                                   {reservation.num_adults} adults, {reservation.num_children || 0} children
@@ -855,7 +855,7 @@ export default function ReservationsPage() {
                   )}
                   {formData.room_id && (
                     <p className="mt-1 text-sm text-gray-500">
-                      Room price will be automatically calculated based on room pricing
+                      Total price will be automatically calculated based on room pricing and stay duration
                     </p>
                   )}
                 </div>
