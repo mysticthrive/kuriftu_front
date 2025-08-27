@@ -18,7 +18,8 @@ import {
   Phone,
   MapPin,
   Calendar,
-  Users
+  Users,
+  Building2
 } from 'lucide-react';
 import { 
   Guest, 
@@ -29,6 +30,7 @@ import {
   CreateGuestData,
   UpdateGuestData 
 } from '@/lib/api/guests';
+import { Reservation, getReservations } from '@/lib/api/reservations';
 import Pagination from '@/components/Pagination';
 
 export default function GuestsPage() {
@@ -37,6 +39,7 @@ export default function GuestsPage() {
   const { toggleSidebar } = useSidebar();
   
   const [guests, setGuests] = useState<Guest[]>([]);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -69,9 +72,32 @@ export default function GuestsPage() {
 
   useEffect(() => {
     if (user) {
-      fetchGuests();
+      fetchData();
     }
   }, [user]);
+
+  const fetchData = async () => {
+    try {
+      setLoadingData(true);
+      const [guestsResponse, reservationsResponse] = await Promise.all([
+        getGuests(),
+        getReservations()
+      ]);
+      
+      if (guestsResponse.success && guestsResponse.data) {
+        setGuests(guestsResponse.data);
+      }
+      
+      if (reservationsResponse.success && reservationsResponse.data) {
+        setReservations(reservationsResponse.data);
+      }
+    } catch (error: any) {
+      console.error('Error fetching data:', error);
+      toast.error(error.response?.data?.message || 'Failed to fetch data');
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const fetchGuests = async () => {
     try {
@@ -314,6 +340,12 @@ export default function GuestsPage() {
     return age;
   };
 
+  const getGuestHotels = (guestId: number): string[] => {
+    const guestReservations = reservations.filter(reservation => reservation.guest_id === guestId);
+    const hotels = Array.from(new Set(guestReservations.map(reservation => reservation.hotel)));
+    return hotels;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -416,6 +448,9 @@ export default function GuestsPage() {
                           Location
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Resort
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Age
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -470,6 +505,29 @@ export default function GuestsPage() {
                               ) : (
                                 <span className="text-gray-500">Not specified</span>
                               )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {(() => {
+                                const hotels = getGuestHotels(guest.guest_id);
+                                if (hotels.length > 0) {
+                                  return (
+                                    <div className="flex items-center">
+                                      <Building2 className="w-4 h-4 text-gray-400 mr-2" />
+                                      {hotels.length === 1 ? (
+                                        hotels[0]
+                                      ) : (
+                                        <span title={hotels.join(', ')}>
+                                          {hotels.length} hotels
+                                        </span>
+                                      )}
+                                    </div>
+                                  );
+                                } else {
+                                  return <span className="text-gray-500">No bookings</span>;
+                                }
+                              })()}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
