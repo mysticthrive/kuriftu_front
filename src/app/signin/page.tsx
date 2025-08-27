@@ -40,8 +40,13 @@ export default function SignInPage() {
         toast.error(isLogin ? 'Login failed. Please check your credentials.' : 'Registration failed. Please try again.');
       }
     } catch (error: any) {
-      // Now this will show the actual backend error message
-      toast.error(error.message || (isLogin ? 'Login failed. Please check your credentials.' : 'Registration failed. Please try again.'));
+      // Handle specific error for inactive accounts
+      if (error.message && error.message.includes('deactivated')) {
+        toast.error('Your account has been deactivated. Please contact your administrator to reactivate your account.');
+      } else {
+        // Now this will show the actual backend error message
+        toast.error(error.message || (isLogin ? 'Login failed. Please check your credentials.' : 'Registration failed. Please try again.'));
+      }
     } finally {
       setLoading(false);
     }
