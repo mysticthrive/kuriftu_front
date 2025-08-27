@@ -542,7 +542,7 @@ export default function Sidebar() {
                     <div className="ml-3">
                       <div className="text-sm font-medium text-gray-900">{getCurrentHotel()?.shortLabel}</div>
                       <div className="text-xs text-gray-500">
-                        {hotelLoading ? 'Refreshing data...' : 'Select Hotel'}
+                        {hotelLoading ? 'Refreshing data...' : 'Select Resort'}
                       </div>
                     </div>
                   </div>
@@ -612,7 +612,7 @@ export default function Sidebar() {
                           {getCurrentHotel()?.label.charAt(0) || 'H'}
                         </span>
                       </div>
-                      <span className="text-sm font-medium text-gray-900">Select Hotel</span>
+                      <span className="text-sm font-medium text-gray-900">Select Resort</span>
                     </div>
                   </div>
                   <div className="py-2">

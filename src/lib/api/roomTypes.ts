@@ -7,6 +7,7 @@ export interface RoomType {
   type_name: string;
   description?: string;
   max_occupancy: number;
+  hotel: string;
   created_at: string;
   updated_at: string;
 }
@@ -15,12 +16,14 @@ export interface CreateRoomTypeData {
   type_name: string;
   description?: string;
   max_occupancy?: number;
+  hotel: string;
 }
 
 export interface UpdateRoomTypeData {
   type_name: string;
   description?: string;
   max_occupancy?: number;
+  hotel: string;
 }
 
 export interface ApiResponse<T> {
@@ -33,6 +36,11 @@ export interface ApiResponse<T> {
 // Get all room types
 export const getRoomTypes = async (): Promise<ApiResponse<RoomType[]>> => {
   return await authenticatedGet<ApiResponse<RoomType[]>>('/room-types');
+};
+
+// Get room types by hotel
+export const getRoomTypesByHotel = async (hotel: string): Promise<ApiResponse<RoomType[]>> => {
+  return await authenticatedGet<ApiResponse<RoomType[]>>(`/room-types?hotel=${hotel}`);
 };
 
 // Get single room type by ID

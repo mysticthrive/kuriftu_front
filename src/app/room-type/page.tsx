@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSidebar } from '@/contexts/SidebarContext';
+import { useHotel } from '@/contexts/HotelContext';
+import { useHotelData } from '@/hooks/useHotelData';
 import Sidebar from '@/components/Sidebar';
 import toast from 'react-hot-toast';
 import { 
@@ -19,6 +21,7 @@ import {
 import { 
   RoomType, 
   getRoomTypes, 
+  getRoomTypesByHotel,
   createRoomType, 
   updateRoomType, 
   deleteRoomType,
@@ -31,8 +34,22 @@ export default function RoomTypePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { toggleSidebar } = useSidebar();
+  const { selectedHotel, getCurrentHotel } = useHotel();
+
+  // Use the hotel data hook to fetch room types based on selected hotel
+  const { 
+    data: roomTypesResponse, 
+    loading: roomTypesLoading, 
+    error: roomTypesError, 
+    refetch: refetchRoomTypes 
+  } = useHotelData({
+    fetchData: (hotelId) => getRoomTypesByHotel(hotelId),
+    enabled: !!user
+  });
+
+  // Extract room types from the API response
+  const roomTypes = roomTypesResponse?.data || [];
   
-  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -42,7 +59,8 @@ export default function RoomTypePage() {
   const [formData, setFormData] = useState<CreateRoomTypeData>({
     type_name: '',
     description: '',
-    max_occupancy: 2
+    max_occupancy: 2,
+    hotel: selectedHotel
   });
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
   const [submitting, setSubmitting] = useState(false);
@@ -58,24 +76,18 @@ export default function RoomTypePage() {
 
   useEffect(() => {
     if (user) {
-      fetchRoomTypes();
+      // Data is now fetched by useHotelData hook
+      setLoadingData(false);
     }
   }, [user]);
 
-  const fetchRoomTypes = async () => {
-    try {
-      setLoadingData(true);
-      const response = await getRoomTypes();
-      if (response.success && response.data) {
-        setRoomTypes(response.data);
-      }
-    } catch (error: any) {
-      console.error('Error fetching room types:', error);
-      toast.error(error.response?.data?.message || 'Failed to fetch room types');
-    } finally {
-      setLoadingData(false);
-    }
-  };
+  // Update formData hotel when selectedHotel changes
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      hotel: selectedHotel
+    }));
+  }, [selectedHotel]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -123,21 +135,15 @@ export default function RoomTypePage() {
         // Update existing room type
         const response = await updateRoomType(editingType.room_type_id, formData);
         if (response.success) {
-          setRoomTypes(prev => 
-            prev.map(type => 
-              type.room_type_id === editingType.room_type_id 
-                ? response.data! 
-                : type
-            )
-          );
           toast.success(response.message || 'Room type updated successfully');
+          refetchRoomTypes();
         }
       } else {
         // Create new room type
         const response = await createRoomType(formData);
         if (response.success && response.data) {
-          setRoomTypes(prev => [response.data!, ...prev]);
           toast.success(response.message || 'Room type created successfully');
+          refetchRoomTypes();
         }
       }
       
@@ -164,7 +170,8 @@ export default function RoomTypePage() {
     setFormData({
       type_name: type.type_name,
       description: type.description || '',
-      max_occupancy: type.max_occupancy
+      max_occupancy: type.max_occupancy,
+      hotel: type.hotel
     });
     setShowModal(true);
   };
@@ -181,8 +188,8 @@ export default function RoomTypePage() {
       setDeleting(true);
       const response = await deleteRoomType(deletingType.room_type_id);
       if (response.success) {
-        setRoomTypes(prev => prev.filter(type => type.room_type_id !== deletingType.room_type_id));
         toast.success(response.message || 'Room type deleted successfully');
+        refetchRoomTypes();
         handleCloseDeleteModal();
       }
     } catch (error: any) {
@@ -201,11 +208,11 @@ export default function RoomTypePage() {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingType(null);
-    setFormData({ type_name: '', description: '', max_occupancy: 2 });
+    setFormData({ type_name: '', description: '', max_occupancy: 2, hotel: selectedHotel });
     setFormErrors({});
   };
 
-  const filteredRoomTypes = roomTypes.filter(type =>
+  const filteredRoomTypes = (Array.isArray(roomTypes) ? roomTypes : []).filter(type =>
     type.type_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (type.description && type.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -263,6 +270,9 @@ export default function RoomTypePage() {
                   </div>
                   <div>
                     <h1 className="text-3xl font-bold text-gray-900">Room Types</h1>
+                    <div className="text-sm text-gray-500 mt-1">
+                      Resort: {getCurrentHotel()?.label || 'Select Hotel'}
+                    </div>
                   </div>
                 </div>
                 <button
@@ -299,7 +309,7 @@ export default function RoomTypePage() {
 
             {/* Room Types Table */}
             <div className="bg-white rounded-lg shadow overflow-hidden">
-              {loadingData ? (
+              {roomTypesLoading ? (
                 <div className="p-8 text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
                   <p className="mt-2 text-gray-500">Loading room types...</p>
@@ -483,6 +493,15 @@ export default function RoomTypePage() {
                   {formErrors.max_occupancy && (
                     <p className="mt-1 text-sm text-red-600">{formErrors.max_occupancy}</p>
                   )}
+                </div>
+
+                <div>
+                  <label htmlFor="hotel" className="block text-sm font-medium text-gray-700 mb-1">
+                    Resort
+                  </label>
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                    {getCurrentHotel()?.label || 'Select Hotel'}
+                  </div>
                 </div>
               </div>
 

@@ -469,7 +469,7 @@ export default function RoomGroupPage() {
 
                  <div>
                    <label htmlFor="hotel" className="block text-sm font-medium text-gray-700 mb-1">
-                     Hotel
+                     Resort
                    </label>
                    <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
                      {getCurrentHotel()?.label || 'Select Hotel'}
