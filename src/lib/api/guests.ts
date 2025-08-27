@@ -14,6 +14,7 @@ export interface Guest {
   zip_code?: string;
   address?: string;
   date_of_birth?: string;
+  notes?: string;
   created_at: string;
   updated_at: string;
 }
@@ -29,6 +30,7 @@ export interface CreateGuestData {
   zip_code?: string;
   address?: string;
   date_of_birth?: string;
+  notes?: string;
 }
 
 export interface UpdateGuestData {
@@ -42,6 +44,7 @@ export interface UpdateGuestData {
   zip_code?: string;
   address?: string;
   date_of_birth?: string;
+  notes?: string;
 }
 
 export interface ApiResponse<T> {

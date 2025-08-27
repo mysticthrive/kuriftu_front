@@ -56,7 +56,8 @@ export default function GuestsPage() {
     city: '',
     zip_code: '',
     address: '',
-    date_of_birth: ''
+    date_of_birth: '',
+    notes: ''
   });
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
   const [submitting, setSubmitting] = useState(false);
@@ -249,7 +250,8 @@ export default function GuestsPage() {
       city: guest.city || '',
       zip_code: guest.zip_code || '',
       address: guest.address || '',
-      date_of_birth: formattedDateOfBirth
+      date_of_birth: formattedDateOfBirth,
+      notes: guest.notes || ''
     });
     setShowModal(true);
   };
@@ -296,7 +298,8 @@ export default function GuestsPage() {
       city: '',
       zip_code: '',
       address: '',
-      date_of_birth: ''
+      date_of_birth: '',
+      notes: ''
     });
     setFormErrors({});
   };
@@ -454,6 +457,9 @@ export default function GuestsPage() {
                           Age
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Notes
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Created
                         </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -539,6 +545,17 @@ export default function GuestsPage() {
                                 </div>
                               ) : (
                                 <span className="text-gray-500">Not specified</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {guest.notes ? (
+                                <div className="max-w-xs truncate" title={guest.notes}>
+                                  {guest.notes}
+                                </div>
+                              ) : (
+                                <span className="text-gray-500">No notes</span>
                               )}
                             </div>
                           </td>
@@ -812,6 +829,21 @@ export default function GuestsPage() {
                       rows={3}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                       placeholder="Enter full address"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                      Notes
+                    </label>
+                    <textarea
+                      id="notes"
+                      name="notes"
+                      value={formData.notes || ''}
+                      onChange={handleInputChange}
+                      rows={4}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      placeholder="Enter any additional notes about the guest"
                     />
                   </div>
                 </div>
