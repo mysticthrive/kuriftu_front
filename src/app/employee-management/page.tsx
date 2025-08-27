@@ -56,10 +56,12 @@ export default function EmployeeManagementPage() {
   const [employees, setEmployees] = useState<UserType[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [showModal, setShowModal] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<UserType | null>(null);
   const [formData, setFormData] = useState<UpdateUserRequest>({
-    role: 'Reservation Officer'
+    role: 'Reservation Officer',
+    is_active: true
   });
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
   const [submitting, setSubmitting] = useState(false);
@@ -94,10 +96,10 @@ export default function EmployeeManagementPage() {
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     }));
     // Clear error when user starts typing
     if (formErrors[name]) {
@@ -129,7 +131,8 @@ export default function EmployeeManagementPage() {
     try {
       setSubmitting(true);
       const updateData: UpdateUserRequest = {
-        role: formData.role
+        role: formData.role,
+        is_active: formData.is_active
       };
       
       const response = await updateUser(editingEmployee.id, updateData);
@@ -153,10 +156,33 @@ export default function EmployeeManagementPage() {
   const openEditModal = (employee: UserType) => {
     setEditingEmployee(employee);
     setFormData({
-      role: employee.role
+      role: employee.role,
+      is_active: employee.is_active
     });
     setFormErrors({});
     setShowModal(true);
+  };
+
+  const toggleEmployeeStatus = async (employee: UserType) => {
+    try {
+      const newStatus = !employee.is_active;
+      const updateData: UpdateUserRequest = {
+        is_active: newStatus
+      };
+      
+      const response = await updateUser(employee.id, updateData);
+      
+      if (response.error) {
+        toast.error(response.error);
+        return;
+      }
+      
+      toast.success(`Employee ${newStatus ? 'activated' : 'deactivated'} successfully`);
+      fetchEmployees();
+    } catch (error: any) {
+      console.error('Error toggling employee status:', error);
+      toast.error(error.response?.data?.message || 'Failed to update employee status');
+    }
   };
 
   const filteredEmployees = employees.filter(employee => {
@@ -166,9 +192,16 @@ export default function EmployeeManagementPage() {
     }
     
     // Apply search filter
-    return employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-           employee.role.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         employee.role.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Apply status filter
+    const matchesStatus = !selectedStatus || 
+      (selectedStatus === 'active' && employee.is_active) ||
+      (selectedStatus === 'inactive' && !employee.is_active);
+    
+    return matchesSearch && matchesStatus;
   });
 
   const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
@@ -240,6 +273,24 @@ export default function EmployeeManagementPage() {
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+                <button
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedStatus('');
+                  }}
+                  className="text-sm text-gray-600 hover:text-gray-800 underline px-3 py-2"
+                >
+                  Clear Filters
+                </button>
               </div>
             </div>
 
@@ -310,6 +361,17 @@ export default function EmployeeManagementPage() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                               <div className="flex items-center justify-end space-x-2">
+                                <button
+                                  onClick={() => toggleEmployeeStatus(employee)}
+                                  className={`px-2 py-1 text-xs rounded-full transition-colors ${
+                                    employee.is_active
+                                      ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                      : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                  }`}
+                                  title={employee.is_active ? 'Deactivate employee' : 'Activate employee'}
+                                >
+                                  {employee.is_active ? 'Deactivate' : 'Activate'}
+                                </button>
                                 <button
                                   onClick={() => openEditModal(employee)}
                                   className="text-blue-600 hover:text-blue-900 p-1"
@@ -387,6 +449,24 @@ export default function EmployeeManagementPage() {
                 {formErrors.role && (
                   <p className="mt-1 text-sm text-red-600">{formErrors.role}</p>
                 )}
+              </div>
+
+              <div>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="is_active"
+                    checked={formData.is_active}
+                    onChange={handleInputChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">
+                    Active Status
+                  </span>
+                </label>
+                <p className="mt-1 text-sm text-gray-500">
+                  {formData.is_active ? 'Employee is active and can access the system' : 'Employee is inactive and cannot access the system'}
+                </p>
               </div>
 
               <div className="flex space-x-3 pt-4">
