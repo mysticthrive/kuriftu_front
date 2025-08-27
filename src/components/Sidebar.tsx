@@ -464,11 +464,24 @@ export default function Sidebar() {
           {!collapsed ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">F</span>
+                <div className="w-8 h-8 flex items-center justify-center">
+                  <img 
+                    src="/images/logo.png" 
+                    alt="Kuriftu Resorts Logo" 
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      // Fallback to text if image fails to load
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                  <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center hidden">
+                    <span className="text-white font-bold text-sm">K</span>
+                  </div>
                 </div>
                 <div className="ml-3">
-                  <div className="text-lg font-bold text-gray-900">Kuriftu</div>
+                  <div className="text-lg font-bold text-gray-900">Kuriftu Resorts</div>
                 </div>
               </div>
               <button
@@ -486,20 +499,23 @@ export default function Sidebar() {
               </button>
             </div>
           ) : (
-            <div className="flex items-center justify-center">
-              <button
-                onClick={toggleSidebarCollapse}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
-                  !collapsed ? 'bg-green-600' : 'bg-gray-200'
-                }`}
-                title={!collapsed ? 'Collapse Sidebar' : 'Expand Sidebar'}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    !collapsed ? 'translate-x-6' : 'translate-x-1'
-                  }`}
+            <div className="flex flex-col items-center justify-center">
+              <div className="w-8 h-8 flex items-center justify-center cursor-pointer" onClick={toggleSidebarCollapse}>
+                <img 
+                  src="/images/logo.png" 
+                  alt="Kuriftu Resorts Logo" 
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    // Fallback to text if image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    target.nextElementSibling?.classList.remove('hidden');
+                  }}
                 />
-              </button>
+                <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center hidden">
+                  <span className="text-white font-bold text-sm">K</span>
+                </div>
+              </div>
             </div>
           )}
         </div>

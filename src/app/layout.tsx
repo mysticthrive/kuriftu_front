@@ -9,8 +9,13 @@ import { Toaster } from 'react-hot-toast';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Full Stack App',
-  description: 'Next.js frontend with Node.js backend and MySQL database',
+  title: 'Kuriftu Resorts',
+  description: 'Kuriftu Resorts Management System',
+  icons: {
+    icon: '/images/logo.png',
+    shortcut: '/images/logo.png',
+    apple: '/images/logo.png',
+  },
 };
 
 export default function RootLayout({
@@ -20,6 +25,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" type="image/png" href="/images/logo.png" />
+        <link rel="shortcut icon" type="image/png" href="/images/logo.png" />
+        <link rel="apple-touch-icon" href="/images/logo.png" />
+      </head>
       <body className={inter.className}>
         <AuthProvider>
           <SidebarProvider>
