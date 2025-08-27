@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSidebar } from '@/contexts/SidebarContext';
@@ -71,6 +71,10 @@ export default function ReservationsPage() {
   const [deleting, setDeleting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [guestSearchTerm, setGuestSearchTerm] = useState('');
+  const [showGuestDropdown, setShowGuestDropdown] = useState(false);
+  const [selectedGuestIndex, setSelectedGuestIndex] = useState(-1);
+  const guestDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -83,6 +87,19 @@ export default function ReservationsPage() {
       fetchData();
     }
   }, [user]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (guestDropdownRef.current && !guestDropdownRef.current.contains(event.target as Node)) {
+        setShowGuestDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -287,6 +304,21 @@ export default function ReservationsPage() {
       currency: 'ETB'
     });
     setFormErrors({});
+    setGuestSearchTerm('');
+    setShowGuestDropdown(false);
+  };
+
+  const filteredGuests = guests.filter(guest =>
+    guest.first_name.toLowerCase().includes(guestSearchTerm.toLowerCase()) ||
+    guest.last_name.toLowerCase().includes(guestSearchTerm.toLowerCase()) ||
+    guest.email.toLowerCase().includes(guestSearchTerm.toLowerCase()) ||
+    (guest.phone && guest.phone.toLowerCase().includes(guestSearchTerm.toLowerCase()))
+  );
+
+  const getSelectedGuestName = () => {
+    if (!formData.guest_id) return '';
+    const guest = guests.find(g => g.guest_id === formData.guest_id);
+    return guest ? `${guest.first_name} ${guest.last_name} - ${guest.email}` : '';
   };
 
   const filteredReservations = reservations.filter(reservation =>
@@ -570,31 +602,104 @@ export default function ReservationsPage() {
 
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                <div className="relative" ref={guestDropdownRef}>
                   <label htmlFor="guest_id" className="block text-sm font-medium text-gray-700 mb-1">
                     Guest *
                   </label>
-                  <select
-                    id="guest_id"
-                    name="guest_id"
-                    value={formData.guest_id}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                      formErrors.guest_id ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">Select a guest</option>
-                    {guests.map((guest) => (
-                      <option key={guest.guest_id} value={guest.guest_id}>
-                        {guest.first_name} {guest.last_name} - {guest.email}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search guests by name, email, or phone..."
+                      value={showGuestDropdown ? guestSearchTerm : getSelectedGuestName()}
+                      onChange={(e) => {
+                        setGuestSearchTerm(e.target.value);
+                        setShowGuestDropdown(true);
+                        setSelectedGuestIndex(-1);
+                        if (!e.target.value) {
+                          setFormData(prev => ({ ...prev, guest_id: 0 }));
+                        }
+                      }}
+                      onFocus={() => setShowGuestDropdown(true)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          setSelectedGuestIndex(prev => 
+                            prev < filteredGuests.length - 1 ? prev + 1 : prev
+                          );
+                        } else if (e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          setSelectedGuestIndex(prev => prev > 0 ? prev - 1 : prev);
+                        } else if (e.key === 'Enter' && selectedGuestIndex >= 0 && filteredGuests[selectedGuestIndex]) {
+                          e.preventDefault();
+                          const guest = filteredGuests[selectedGuestIndex];
+                          setFormData(prev => ({ ...prev, guest_id: guest.guest_id }));
+                          setGuestSearchTerm('');
+                          setShowGuestDropdown(false);
+                          setSelectedGuestIndex(-1);
+                        } else if (e.key === 'Escape') {
+                          setShowGuestDropdown(false);
+                          setSelectedGuestIndex(-1);
+                        }
+                      }}
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                        formErrors.guest_id ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                    />
+                    {formData.guest_id && !showGuestDropdown && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, guest_id: 0 }));
+                          setGuestSearchTerm('');
+                          setSelectedGuestIndex(-1);
+                        }}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                    {showGuestDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {filteredGuests.length > 0 ? (
+                          filteredGuests.map((guest, index) => (
+                            <div
+                              key={guest.guest_id}
+                              className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                                index === selectedGuestIndex 
+                                  ? 'bg-green-50 border-green-200' 
+                                  : 'hover:bg-gray-100'
+                              }`}
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, guest_id: guest.guest_id }));
+                                setGuestSearchTerm('');
+                                setShowGuestDropdown(false);
+                                setSelectedGuestIndex(-1);
+                              }}
+                            >
+                              <div className="font-medium text-gray-900">
+                                {guest.first_name} {guest.last_name}
+                              </div>
+                              <div className="text-sm text-gray-600">{guest.email}</div>
+                              {guest.phone && (
+                                <div className="text-xs text-gray-500">{guest.phone}</div>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-gray-500 text-sm">
+                            No guests found
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   {formErrors.guest_id && (
                     <p className="mt-1 text-sm text-red-600">{formErrors.guest_id}</p>
                   )}
                 </div>
-
+                
                 <div>
                   <label htmlFor="room_id" className="block text-sm font-medium text-gray-700 mb-1">
                     Room *
