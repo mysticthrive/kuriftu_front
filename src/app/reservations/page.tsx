@@ -528,6 +528,43 @@ export default function ReservationsPage() {
     };
   };
 
+  // Calculate early check-in and late check-out charges
+  const calculateCheckInOutCharges = (checkInTime: string, checkOutTime: string, baseRoomPrice: number) => {
+    let earlyCheckInCharge = 0;
+    let lateCheckOutCharge = 0;
+    
+    // Parse check-in time
+    if (checkInTime) {
+      const [hours, minutes] = checkInTime.split(':').map(Number);
+      const checkInHour = hours + minutes / 60;
+      
+      // Early check-in: 6:00 AM to 12:00 PM (6:00 to 12:00)
+      if (checkInHour >= 6 && checkInHour < 12) {
+        earlyCheckInCharge = baseRoomPrice * 0.5; // 50% of room charge
+      }
+    }
+    
+    // Parse check-out time
+    if (checkOutTime) {
+      const [hours, minutes] = checkOutTime.split(':').map(Number);
+      const checkOutHour = hours + minutes / 60;
+      
+      // Late check-out: 11:00 AM to 6:00 PM (11:00 to 18:00)
+      if (checkOutHour >= 11 && checkOutHour < 18) {
+        lateCheckOutCharge = baseRoomPrice * 0.5; // 50% of room charge
+      }
+      // Late check-out: After 6:00 PM (18:00+)
+      else if (checkOutHour >= 18) {
+        lateCheckOutCharge = baseRoomPrice; // 100% of room charge
+      }
+    }
+    
+    return {
+      earlyCheckInCharge,
+      lateCheckOutCharge
+    };
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -720,6 +757,23 @@ export default function ReservationsPage() {
                                     })()}
                                   </div>
                                 )}
+                                {(() => {
+                                  const checkInDate = new Date(reservation.check_in_date);
+                                  const checkOutDate = new Date(reservation.check_out_date);
+                                  const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+                                  const baseRoomPrice = reservation.total_price / nights; // Approximate base price
+                                  const checkInOutCharges = calculateCheckInOutCharges(reservation.check_in_time, reservation.check_out_time, baseRoomPrice);
+                                  if (checkInOutCharges.earlyCheckInCharge > 0 || checkInOutCharges.lateCheckOutCharge > 0) {
+                                    return (
+                                      <div className="text-xs text-gray-400 mt-1">
+                                        {checkInOutCharges.earlyCheckInCharge > 0 && `Early Check-in: $${checkInOutCharges.earlyCheckInCharge.toFixed(2)}`}
+                                        {checkInOutCharges.earlyCheckInCharge > 0 && checkInOutCharges.lateCheckOutCharge > 0 && ' | '}
+                                        {checkInOutCharges.lateCheckOutCharge > 0 && `Late Check-out: $${checkInOutCharges.lateCheckOutCharge.toFixed(2)}`}
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })()}
                               </div>
                             </div>
                           </td>
@@ -963,6 +1017,11 @@ export default function ReservationsPage() {
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
+                  <div className="mt-1 p-2 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <p className="text-xs text-yellow-800">
+                      <strong>Early Check-in:</strong> 6:00 AM - 12:00 PM: 50% room charge (subject to availability)
+                    </p>
+                  </div>
                 </div>
 
                 <div>
@@ -977,6 +1036,11 @@ export default function ReservationsPage() {
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />
+                  <div className="mt-1 p-2 bg-orange-50 rounded-lg border border-orange-200">
+                    <p className="text-xs text-orange-800">
+                      <strong>Late Check-out:</strong> 11:00 AM - 6:00 PM: 50% room charge | After 6:00 PM: 100% room charge
+                    </p>
+                  </div>
                 </div>
 
                 <div>
@@ -1129,6 +1193,33 @@ export default function ReservationsPage() {
                           );
                         }
                         return <p className="text-xs text-green-700">No additional charges for children under 3 years old</p>;
+                      })()}
+                    </div>
+                  )}
+                  {formData.check_in_time && formData.check_out_time && formData.check_in_date && formData.check_out_date && (
+                    <div className="mt-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                      <p className="text-sm font-medium text-purple-800 mb-1">Check-in/out Charges Preview:</p>
+                      {(() => {
+                        const checkInDate = new Date(formData.check_in_date);
+                        const checkOutDate = new Date(formData.check_out_date);
+                        const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+                        // Estimate base room price (this would be more accurate if we had room pricing data)
+                        const estimatedBasePrice = 100; // Placeholder - in real app, get from room pricing
+                        const checkInOutCharges = calculateCheckInOutCharges(formData.check_in_time, formData.check_out_time, estimatedBasePrice);
+                        if (checkInOutCharges.earlyCheckInCharge > 0 || checkInOutCharges.lateCheckOutCharge > 0) {
+                          return (
+                            <div className="text-xs text-purple-700 space-y-1">
+                              {checkInOutCharges.earlyCheckInCharge > 0 && (
+                                <p><strong>Early Check-in:</strong> ${checkInOutCharges.earlyCheckInCharge.toFixed(2)}</p>
+                              )}
+                              {checkInOutCharges.lateCheckOutCharge > 0 && (
+                                <p><strong>Late Check-out:</strong> ${checkInOutCharges.lateCheckOutCharge.toFixed(2)}</p>
+                              )}
+                              <p><strong>Total Check-in/out Charges:</strong> ${(checkInOutCharges.earlyCheckInCharge + checkInOutCharges.lateCheckOutCharge).toFixed(2)}</p>
+                            </div>
+                          );
+                        }
+                        return <p className="text-xs text-purple-700">No additional check-in/out charges</p>;
                       })()}
                     </div>
                   )}
