@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSidebar } from '@/contexts/SidebarContext';
+import { useHotel } from '@/contexts/HotelContext';
+import { useHotelData } from '@/hooks/useHotelData';
 import Sidebar from '@/components/Sidebar';
 import toast from 'react-hot-toast';
 import { 
@@ -19,6 +21,7 @@ import {
 import { 
   RoomGroup, 
   getRoomGroups, 
+  getRoomGroupsByHotel,
   createRoomGroup, 
   updateRoomGroup, 
   deleteRoomGroup,
@@ -31,8 +34,27 @@ export default function RoomGroupPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { toggleSidebar } = useSidebar();
+  const { selectedHotel, getCurrentHotel } = useHotel();
+
+  // Use the hotel data hook to fetch room groups based on selected hotel
+  const { 
+    data: roomGroupsResponse, 
+    loading: roomGroupsLoading, 
+    error: roomGroupsError, 
+    refetch: refetchRoomGroups 
+  } = useHotelData({
+    fetchData: (hotelId) => getRoomGroupsByHotel(hotelId),
+    enabled: !!user
+  });
+
+  // Extract room groups from the API response
+  const roomGroups = roomGroupsResponse?.data || [];
   
-  const [roomGroups, setRoomGroups] = useState<RoomGroup[]>([]);
+  // Debug logging
+  console.log('Room Groups Response:', roomGroupsResponse);
+  console.log('Room Groups:', roomGroups);
+  console.log('Selected Hotel:', selectedHotel);
+  
   const [loadingData, setLoadingData] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -41,7 +63,8 @@ export default function RoomGroupPage() {
   const [editingGroup, setEditingGroup] = useState<RoomGroup | null>(null);
   const [formData, setFormData] = useState<CreateRoomGroupData>({
     group_name: '',
-    description: ''
+    description: '',
+    hotel: selectedHotel
   });
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
   const [submitting, setSubmitting] = useState(false);
@@ -57,24 +80,18 @@ export default function RoomGroupPage() {
 
   useEffect(() => {
     if (user) {
-      fetchRoomGroups();
+      // Data is now fetched by useHotelData hook
+      setLoadingData(false);
     }
   }, [user]);
 
-  const fetchRoomGroups = async () => {
-    try {
-      setLoadingData(true);
-      const response = await getRoomGroups();
-      if (response.success && response.data) {
-        setRoomGroups(response.data);
-      }
-    } catch (error: any) {
-      console.error('Error fetching room groups:', error);
-      toast.error(error.response?.data?.message || 'Failed to fetch room groups');
-    } finally {
-      setLoadingData(false);
-    }
-  };
+  // Update formData hotel when selectedHotel changes
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      hotel: selectedHotel
+    }));
+  }, [selectedHotel]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -99,7 +116,11 @@ export default function RoomGroupPage() {
     } else if (formData.group_name.length > 100) {
       errors.group_name = 'Group name must be less than 100 characters';
     }
-
+    
+    if (!formData.hotel) {
+      errors.hotel = 'Hotel is required';
+    }
+    
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -118,21 +139,15 @@ export default function RoomGroupPage() {
         // Update existing room group
         const response = await updateRoomGroup(editingGroup.room_group_id, formData);
         if (response.success) {
-          setRoomGroups(prev => 
-            prev.map(group => 
-              group.room_group_id === editingGroup.room_group_id 
-                ? response.data! 
-                : group
-            )
-          );
           toast.success(response.message || 'Room group updated successfully');
+          refetchRoomGroups();
         }
       } else {
         // Create new room group
         const response = await createRoomGroup(formData);
         if (response.success && response.data) {
-          setRoomGroups(prev => [response.data!, ...prev]);
           toast.success(response.message || 'Room group created successfully');
+          refetchRoomGroups();
         }
       }
       
@@ -158,7 +173,8 @@ export default function RoomGroupPage() {
     setEditingGroup(group);
     setFormData({
       group_name: group.group_name,
-      description: group.description || ''
+      description: group.description || '',
+      hotel: group.hotel
     });
     setShowModal(true);
   };
@@ -175,8 +191,8 @@ export default function RoomGroupPage() {
       setDeleting(true);
       const response = await deleteRoomGroup(deletingGroup.room_group_id);
       if (response.success) {
-        setRoomGroups(prev => prev.filter(group => group.room_group_id !== deletingGroup.room_group_id));
         toast.success(response.message || 'Room group deleted successfully');
+        refetchRoomGroups();
         handleCloseDeleteModal();
       }
     } catch (error: any) {
@@ -195,11 +211,11 @@ export default function RoomGroupPage() {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingGroup(null);
-    setFormData({ group_name: '', description: '' });
+    setFormData({ group_name: '', description: '', hotel: selectedHotel });
     setFormErrors({});
   };
 
-  const filteredRoomGroups = roomGroups.filter(group =>
+  const filteredRoomGroups = (Array.isArray(roomGroups) ? roomGroups : []).filter(group =>
     group.group_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (group.description && group.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -255,9 +271,12 @@ export default function RoomGroupPage() {
                   <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center mr-4">
                     <Building2 className="w-6 h-6 text-white" />
                   </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Room Groups</h1>
-                  </div>
+                                     <div>
+                     <h1 className="text-3xl font-bold text-gray-900">Room Groups</h1>
+                     <div className="text-sm text-gray-500 mt-1">
+                       Hotel: {getCurrentHotel()?.label || 'Select Hotel'}
+                     </div>
+                   </div>
                 </div>
                 <button
                   onClick={() => setShowModal(true)}
@@ -292,8 +311,8 @@ export default function RoomGroupPage() {
             </div>
 
             {/* Room Groups Table */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              {loadingData ? (
+                         <div className="bg-white rounded-lg shadow overflow-hidden">
+               {roomGroupsLoading ? (
                 <div className="p-8 text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
                   <p className="mt-2 text-gray-500">Loading room groups...</p>
@@ -433,20 +452,29 @@ export default function RoomGroupPage() {
                   )}
                 </div>
 
-                <div>
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="Enter description (optional)"
-                  />
-                </div>
+                                 <div>
+                   <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                     Description
+                   </label>
+                   <textarea
+                     id="description"
+                     name="description"
+                     value={formData.description}
+                     onChange={handleInputChange}
+                     rows={3}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                     placeholder="Enter description (optional)"
+                   />
+                 </div>
+
+                 <div>
+                   <label htmlFor="hotel" className="block text-sm font-medium text-gray-700 mb-1">
+                     Hotel
+                   </label>
+                   <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
+                     {getCurrentHotel()?.label || 'Select Hotel'}
+                   </div>
+                 </div>
               </div>
 
               <div className="flex items-center justify-end space-x-3 mt-6">

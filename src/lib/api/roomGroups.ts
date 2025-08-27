@@ -6,17 +6,20 @@ export interface RoomGroup {
   room_group_id: number;
   group_name: string;
   description?: string;
+  hotel: string;
   created_at: string;
 }
 
 export interface CreateRoomGroupData {
   group_name: string;
   description?: string;
+  hotel: string;
 }
 
 export interface UpdateRoomGroupData {
   group_name: string;
   description?: string;
+  hotel: string;
 }
 
 export interface ApiResponse<T> {
@@ -29,6 +32,11 @@ export interface ApiResponse<T> {
 // Get all room groups
 export const getRoomGroups = async (): Promise<ApiResponse<RoomGroup[]>> => {
   return await authenticatedGet<ApiResponse<RoomGroup[]>>('/room-groups');
+};
+
+// Get room groups by hotel
+export const getRoomGroupsByHotel = async (hotel: string): Promise<ApiResponse<RoomGroup[]>> => {
+  return await authenticatedGet<ApiResponse<RoomGroup[]>>(`/room-groups?hotel=${hotel}`);
 };
 
 // Get single room group by ID
