@@ -63,8 +63,7 @@ export default function ReservationsPage() {
     special_requests: '',
     status: 'confirmed',
     payment_status: 'pending',
-    source: 'website',
-    currency: 'ETB'
+    source: 'website'
   });
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
   const [submitting, setSubmitting] = useState(false);
@@ -136,6 +135,20 @@ export default function ReservationsPage() {
       processedValue = value.replace(/\s/g, '').replace(/\./g, ''); // Remove all spaces and decimal points
     }
     
+    // Auto-set number of adults when room is selected (only for new reservations or when room changes)
+    if (name === 'room_id' && value) {
+      const selectedRoom = rooms.find(room => room.room_id === parseInt(value));
+      if (selectedRoom && selectedRoom.max_occupancy) {
+        setFormData(prev => ({
+          ...prev,
+          room_id: parseInt(value) || 0,
+          num_adults: selectedRoom.max_occupancy || 1
+        }));
+        return; // Exit early to avoid double processing
+      }
+    }
+    
+    // Normal input handling for all other fields
     setFormData(prev => ({
       ...prev,
       [name]: name === 'guest_id' || name === 'room_id' || name === 'num_adults' || name === 'num_children' 
@@ -184,6 +197,12 @@ export default function ReservationsPage() {
     }
     if (formData.num_adults < 1) {
       errors.num_adults = 'At least one adult is required';
+    }
+    
+    // Check if number of adults exceeds room's max occupancy
+    const maxOccupancy = getSelectedRoomMaxOccupancy();
+    if (maxOccupancy && formData.num_adults > maxOccupancy) {
+      errors.num_adults = `Number of adults cannot exceed room's maximum occupancy (${maxOccupancy})`;
     }
     if (!formData.status) {
       errors.status = 'Status is required';
@@ -305,7 +324,7 @@ export default function ReservationsPage() {
       status: reservation.status,
       payment_status: reservation.payment_status,
       source: reservation.source,
-      currency: reservation.currency
+
     });
     setShowModal(true);
   };
@@ -355,8 +374,7 @@ export default function ReservationsPage() {
       special_requests: '',
       status: 'confirmed',
       payment_status: 'pending',
-      source: 'website',
-      currency: 'ETB'
+      source: 'website'
     });
     setFormErrors({});
     setGuestSearchTerm('');
@@ -464,6 +482,11 @@ export default function ReservationsPage() {
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
     );
+  };
+
+  const getSelectedRoomMaxOccupancy = () => {
+    if (!formData.room_id) return null;
+    return rooms.find(room => room.room_id === formData.room_id)?.max_occupancy || null;
   };
 
   if (loading) {
@@ -579,6 +602,9 @@ export default function ReservationsPage() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Payment
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Total Price
+                        </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
                         </th>
@@ -630,6 +656,19 @@ export default function ReservationsPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {getPaymentStatusBadge(reservation.payment_status)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <CreditCard className="w-4 h-4 text-gray-400 mr-2" />
+                              <div>
+                                <div className="text-sm font-semibold text-green-600">
+                                  {Number(reservation.total_price).toFixed(2)}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {reservation.num_adults} adults, {reservation.num_children || 0} children
+                                </div>
+                              </div>
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                             <div className="flex items-center justify-end space-x-2">
@@ -807,12 +846,17 @@ export default function ReservationsPage() {
                     <option value="">Select a room</option>
                     {rooms.map((room) => (
                       <option key={room.room_id} value={room.room_id}>
-                        {room.room_number} - {room.hotel} ({room.status})
+                        {room.room_number} - {room.hotel} ({room.status}) - Max: {room.max_occupancy || 'N/A'} persons
                       </option>
                     ))}
                   </select>
                   {formErrors.room_id && (
                     <p className="mt-1 text-sm text-red-600">{formErrors.room_id}</p>
+                  )}
+                  {formData.room_id && (
+                    <p className="mt-1 text-sm text-gray-500">
+                      Room price will be automatically calculated based on room pricing
+                    </p>
                   )}
                 </div>
 
@@ -891,13 +935,19 @@ export default function ReservationsPage() {
                     id="num_adults"
                     name="num_adults"
                     min="1"
-                    max="10"
+                    max={getSelectedRoomMaxOccupancy() || 10}
                     value={formData.num_adults}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                    readOnly
+                    className={`w-full px-3 py-2 border rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed ${
                       formErrors.num_adults ? 'border-red-500' : 'border-gray-300'
                     }`}
                   />
+                  {getSelectedRoomMaxOccupancy() && (
+                    <p className="mt-1 text-sm text-gray-500">
+                      Automatically set to room's max occupancy: {getSelectedRoomMaxOccupancy()} persons
+                    </p>
+                  )}
                   {formErrors.num_adults && (
                     <p className="mt-1 text-sm text-red-600">{formErrors.num_adults}</p>
                   )}
@@ -938,22 +988,7 @@ export default function ReservationsPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-1">
-                    Currency
-                  </label>
-                  <select
-                    id="currency"
-                    name="currency"
-                    value={formData.currency}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  >
-                    <option value="ETB">ETB</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                  </select>
-                </div>
+
 
                 <div>
                   <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">

@@ -16,7 +16,7 @@ export interface Reservation {
   children_ages?: string;
   special_requests?: string;
   total_price: number;
-  currency: string;
+
   status: 'confirmed' | 'cancelled' | 'completed';
   payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
   source: 'website' | 'mobile_app' | 'walk_in' | 'agent' | 'call_center';
@@ -48,7 +48,6 @@ export interface CreateReservationData {
   status?: 'confirmed' | 'cancelled' | 'completed';
   payment_status?: 'pending' | 'paid' | 'failed' | 'refunded';
   source?: 'website' | 'mobile_app' | 'walk_in' | 'agent' | 'call_center';
-  currency?: string;
 }
 
 export interface UpdateReservationData {
@@ -65,7 +64,6 @@ export interface UpdateReservationData {
   status?: 'confirmed' | 'cancelled' | 'completed';
   payment_status?: 'pending' | 'paid' | 'failed' | 'refunded';
   source?: 'website' | 'mobile_app' | 'walk_in' | 'agent' | 'call_center';
-  currency?: string;
 }
 
 export interface Room {
@@ -75,6 +73,7 @@ export interface Room {
   status: 'available' | 'occupied' | 'maintenance' | 'hold' | 'booked';
   room_type?: string;
   room_group?: string;
+  max_occupancy?: number;
 }
 
 export interface ApiResponse<T> {
