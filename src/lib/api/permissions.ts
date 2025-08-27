@@ -35,7 +35,7 @@ export const AVAILABLE_MENU_ITEMS = [
   'room-group',
   'room-type',
   'room-management',
-  'room-type-images',
+  'room-images',
   'room-pricing',
   'rooms',
   'guests',

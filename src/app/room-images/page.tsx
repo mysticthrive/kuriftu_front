@@ -270,7 +270,7 @@ export default function RoomTypeImagesPage() {
                           <Home className="w-4 h-4 mr-2" />
                           <span>Dashboard</span>
                           <span className="mx-2">/</span>
-                          <span className="text-gray-900 font-medium">Room Type Images</span>
+                          <span className="text-gray-900 font-medium">Room Images</span>
                         </nav>
                       </div>
             
@@ -281,7 +281,7 @@ export default function RoomTypeImagesPage() {
                     <Image className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Room Type Images</h1>
+                    <h1 className="text-3xl font-bold text-gray-900">Room Images</h1>
                   </div>
                 </div>
                 <button

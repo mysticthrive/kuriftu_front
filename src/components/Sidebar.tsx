@@ -169,7 +169,7 @@ export default function Sidebar() {
           { id: 'room-group', label: 'Room Group', icon: 'Building2', href: '/room-group' },
           { id: 'room-type', label: 'Room Type', icon: 'Building2', href: '/room-type' },
           { id: 'room-management', label: 'Room Group Room Types', icon: 'Settings', href: '/room-management' },
-          { id: 'room-type-images', label: 'Room Type Image', icon: 'Image', href: '/room-type-images' },
+          { id: 'room-images', label: 'Room Images', icon: 'Image', href: '/room-images' },
           { id: 'room-pricing', label: 'Room Pricing', icon: 'DollarSign', href: '/room-pricing' },
           { id: 'rooms', label: 'Rooms', icon: 'Bed', href: '/rooms' },
         ] 
