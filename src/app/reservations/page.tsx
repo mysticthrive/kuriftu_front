@@ -129,23 +129,46 @@ export default function ReservationsPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
+    
+    // For children_ages, remove all spaces and decimal points
+    let processedValue = value;
+    if (name === 'children_ages') {
+      processedValue = value.replace(/\s/g, '').replace(/\./g, ''); // Remove all spaces and decimal points
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: name === 'guest_id' || name === 'room_id' || name === 'num_adults' || name === 'num_children' 
-        ? parseInt(value) || 0 
-        : value
+        ? parseInt(processedValue) || 0 
+        : processedValue
     }));
-    // Clear error when user starts typing
-    if (formErrors[name]) {
+    
+    // Clear error when user starts typing (but not for children_ages as it has real-time validation)
+    if (formErrors[name] && name !== 'children_ages') {
       setFormErrors(prev => ({
         ...prev,
         [name]: ''
       }));
     }
+    
+    // Real-time validation for children ages
+    if (name === 'children_ages') {
+      console.log('Real-time validation for children_ages:', processedValue);
+      const validationError = validateChildrenAgesFormat(processedValue);
+      console.log('Validation error:', validationError);
+      if (validationError) {
+        setFormErrors(prev => ({
+          ...prev,
+          [name]: validationError
+        }));
+      }
+    }
   };
 
   const validateForm = (): boolean => {
     const errors: {[key: string]: string} = {};
+    
+    console.log('Validating form data:', formData);
     
     if (!formData.guest_id) {
       errors.guest_id = 'Guest is required';
@@ -173,16 +196,67 @@ export default function ReservationsPage() {
       errors.payment_status = 'Payment status is required';
     }
 
+    // Validate children ages format
+    console.log('Validating children ages:', formData.children_ages, 'num_children:', formData.num_children);
+    
+    if (formData.children_ages && formData.children_ages.trim()) {
+      // Check if there are any spaces in the input
+      if (formData.children_ages.includes(' ')) {
+        errors.children_ages = 'Spaces are not allowed. Use comma-separated format (e.g., 5,8,12)';
+        console.log('Error: Spaces found in input');
+      } else if (formData.children_ages.includes('.')) {
+        errors.children_ages = 'Decimal numbers are not allowed. Use whole numbers only (e.g., 5,8,12)';
+        console.log('Error: Decimal points found in input');
+      } else {
+        const ages = formData.children_ages.split(',').map(age => age.trim()).filter(age => age !== '');
+        console.log('Parsed ages:', ages);
+        
+        // Check if there are any empty entries after splitting
+        if (ages.length === 0) {
+          errors.children_ages = 'Please enter valid ages separated by commas (no spaces)';
+          console.log('Error: Empty ages array');
+        } else {
+                  const invalidAges = ages.filter(age => {
+          // Check if age is a valid whole number between 0 and 18
+          const numAge = parseInt(age);
+          const floatAge = parseFloat(age);
+          return isNaN(numAge) || numAge < 0 || numAge > 18 || numAge !== floatAge; // Ensures it's a whole number
+        });
+          console.log('Invalid ages:', invalidAges);
+          
+          if (invalidAges.length > 0) {
+            errors.children_ages = 'Children ages must be comma-separated whole numbers between 0-18 (no decimals, no spaces)';
+            console.log('Error: Invalid ages found');
+          }
+          
+          // Check if number of ages matches number of children
+          if ((formData.num_children || 0) > 0 && ages.length !== (formData.num_children || 0)) {
+            errors.children_ages = `Number of ages (${ages.length}) must match number of children (${formData.num_children || 0})`;
+            console.log('Error: Age count mismatch');
+          }
+        }
+      }
+    } else if ((formData.num_children || 0) > 0) {
+      // If there are children but no ages provided, show a warning
+      errors.children_ages = 'Please provide ages for all children (comma-separated, no spaces)';
+      console.log('Error: Children specified but no ages provided');
+    }
+
+    console.log('Final validation errors:', errors);
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted, validating...');
     
     if (!validateForm()) {
+      console.log('Validation failed, form not submitted');
       return;
     }
+    
+    console.log('Validation passed, proceeding with submission');
 
     try {
       setSubmitting(true);
@@ -319,6 +393,45 @@ export default function ReservationsPage() {
     if (!formData.guest_id) return '';
     const guest = guests.find(g => g.guest_id === formData.guest_id);
     return guest ? `${guest.first_name} ${guest.last_name} - ${guest.email}` : '';
+  };
+
+  const validateChildrenAgesFormat = (value: string): string => {
+    console.log('validateChildrenAgesFormat called with:', value);
+    if (!value || !value.trim()) return '';
+    
+    // Check if there are any spaces in the input
+    if (value.includes(' ')) {
+      return 'Spaces are not allowed. Use comma-separated format (e.g., 5,8,12)';
+    }
+    
+    // Check if there are any decimal points in the input
+    if (value.includes('.')) {
+      return 'Decimal numbers are not allowed. Use whole numbers only (e.g., 5,8,12)';
+    }
+    
+    const ages = value.split(',').map(age => age.trim()).filter(age => age !== '');
+    console.log('Parsed ages in real-time validation:', ages);
+    
+    if (ages.length === 0) {
+      return 'Please enter valid ages separated by commas (no spaces)';
+    }
+    
+    const invalidAges = ages.filter(age => {
+      const numAge = parseInt(age);
+      const floatAge = parseFloat(age);
+      return isNaN(numAge) || numAge < 0 || numAge > 18 || numAge !== floatAge; // Ensures it's a whole number
+    });
+    console.log('Invalid ages in real-time validation:', invalidAges);
+    
+    if (invalidAges.length > 0) {
+      return 'Ages must be whole numbers between 0-18 (no decimals)';
+    }
+    
+    if ((formData.num_children || 0) > 0 && ages.length !== (formData.num_children || 0)) {
+      return `Expected ${formData.num_children || 0} ages for ${formData.num_children || 0} children`;
+    }
+    
+    return '';
   };
 
   const filteredReservations = reservations.filter(reservation =>
@@ -911,7 +1024,7 @@ export default function ReservationsPage() {
 
                 <div className="md:col-span-2">
                   <label htmlFor="children_ages" className="block text-sm font-medium text-gray-700 mb-1">
-                    Children Ages (comma-separated)
+                    Children Ages (comma-separated whole numbers, no spaces or decimals)
                   </label>
                   <input
                     type="text"
@@ -919,9 +1032,35 @@ export default function ReservationsPage() {
                     name="children_ages"
                     value={formData.children_ages}
                     onChange={handleInputChange}
-                    placeholder="e.g., 5, 8, 12"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="e.g., 5,8,12"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                      formErrors.children_ages ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
+                  {formErrors.children_ages && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.children_ages}</p>
+                  )}
+                  {!formErrors.children_ages && formData.children_ages && (
+                    <p className="mt-1 text-sm text-gray-500">
+                      Format: Enter whole numbers separated by commas, no spaces or decimals (e.g., 5,8,12)
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      console.log('Testing validation...');
+                      const testValue = formData.children_ages || '';
+                      console.log('Current value:', testValue);
+                      const error = validateChildrenAgesFormat(testValue);
+                      console.log('Validation result:', error);
+                      if (error) {
+                        setFormErrors(prev => ({ ...prev, children_ages: error }));
+                      }
+                    }}
+                    className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
+                  >
+                    Test Validation
+                  </button>
                 </div>
 
                 <div className="md:col-span-2">
