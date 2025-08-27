@@ -271,7 +271,7 @@ export default function RoomTypePage() {
                   <div>
                     <h1 className="text-3xl font-bold text-gray-900">Room Types</h1>
                     <div className="text-sm text-gray-500 mt-1">
-                      Resort: {getCurrentHotel()?.label || 'Select Hotel'}
+                      Resort: {getCurrentHotel()?.label || 'Select Resort'}
                     </div>
                   </div>
                 </div>
@@ -500,7 +500,7 @@ export default function RoomTypePage() {
                     Resort
                   </label>
                   <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                    {getCurrentHotel()?.label || 'Select Hotel'}
+                    {getCurrentHotel()?.label || 'Select Resort'}
                   </div>
                 </div>
               </div>

@@ -346,7 +346,7 @@ export default function RoomsPage() {
                   />
                 </div>
                 <div className="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
-                  {getCurrentHotel()?.label || 'Select Hotel'}
+                  {getCurrentHotel()?.label || 'Select Resort'}
                 </div>
                 <select
                   value={selectedStatus}
@@ -552,10 +552,10 @@ export default function RoomsPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Hotel *
+                  Resort *
                 </label>
                 <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
-                  {getCurrentHotel()?.label || 'Select Hotel'}
+                  {getCurrentHotel()?.label || 'Select Resort'}
                 </div>
               </div>
 

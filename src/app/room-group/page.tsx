@@ -274,7 +274,7 @@ export default function RoomGroupPage() {
                                      <div>
                      <h1 className="text-3xl font-bold text-gray-900">Room Groups</h1>
                      <div className="text-sm text-gray-500 mt-1">
-                       Hotel: {getCurrentHotel()?.label || 'Select Hotel'}
+                       Resort: {getCurrentHotel()?.label || 'Select Resort'}
                      </div>
                    </div>
                 </div>
@@ -472,7 +472,7 @@ export default function RoomGroupPage() {
                      Resort
                    </label>
                    <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700">
-                     {getCurrentHotel()?.label || 'Select Hotel'}
+                     {getCurrentHotel()?.label || 'Select Resort'}
                    </div>
                  </div>
               </div>
