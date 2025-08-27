@@ -280,7 +280,7 @@ export default function RoomsPage() {
     // We'll look for single occupancy pricing as default
     const pricing = roomPricing.find(p => 
       p.hotel === room.hotel && 
-      p.occupancy === 'single' &&
+      p.occupancy === 1 &&
       // Try to match by room type first, then by group if available
       (p.group_name === room.group_name || p.type_name === room.type_name)
     );
@@ -398,7 +398,7 @@ export default function RoomsPage() {
                           Room
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Hotel
+                          Resort
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Type

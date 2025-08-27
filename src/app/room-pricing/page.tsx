@@ -60,7 +60,6 @@ export default function RoomPricingPage() {
   const [relationships, setRelationships] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedOccupancy, setSelectedOccupancy] = useState<string>('');
   const [selectedRelationship, setSelectedRelationship] = useState<string>('');
   const [showModal, setShowModal] = useState(false);
   const [editingPricing, setEditingPricing] = useState<RoomPricing | null>(null);
@@ -74,46 +73,13 @@ export default function RoomPricingPage() {
   const [formData, setFormData] = useState<CreateRoomPricingData>({
     room_group_room_type_id: 0,
     hotel: selectedHotel,
-    occupancy: 'single',
-    day_of_week: undefined,
-    month: undefined,
-    holiday_flag: false,
-    start_date: '',
-    end_date: '',
+    day_of_week: 'weekdays',
     price: 0
   });
 
-  const occupancies = [
-    { value: 'single', label: 'Single' },
-    { value: 'double', label: 'Double' },
-    { value: 'triple', label: 'Triple' },
-    { value: 'child', label: 'Child' }
-  ];
+  const [selectedRelationshipMaxOccupancy, setSelectedRelationshipMaxOccupancy] = useState<number>(0);
 
-  const daysOfWeek = [
-    { value: 'monday', label: 'Monday' },
-    { value: 'tuesday', label: 'Tuesday' },
-    { value: 'wednesday', label: 'Wednesday' },
-    { value: 'thursday', label: 'Thursday' },
-    { value: 'friday', label: 'Friday' },
-    { value: 'saturday', label: 'Saturday' },
-    { value: 'sunday', label: 'Sunday' }
-  ];
 
-  const months = [
-    { value: 1, label: 'January' },
-    { value: 2, label: 'February' },
-    { value: 3, label: 'March' },
-    { value: 4, label: 'April' },
-    { value: 5, label: 'May' },
-    { value: 6, label: 'June' },
-    { value: 7, label: 'July' },
-    { value: 8, label: 'August' },
-    { value: 9, label: 'September' },
-    { value: 10, label: 'October' },
-    { value: 11, label: 'November' },
-    { value: 12, label: 'December' }
-  ];
 
   useEffect(() => {
     if (!loading && !user) {
@@ -167,17 +133,8 @@ export default function RoomPricingPage() {
     try {
       setSubmitting(true);
       
-      // Prepare data for API - convert empty strings to undefined for optional fields
-      const apiData = {
-        ...formData,
-        start_date: formData.start_date || undefined,
-        end_date: formData.end_date || undefined,
-        day_of_week: formData.day_of_week || undefined,
-        month: formData.month || undefined
-      };
-      
       if (editingPricing) {
-        const response = await updateRoomPricing(editingPricing.pricing_id, apiData);
+        const response = await updateRoomPricing(editingPricing.pricing_id, formData);
         if (response.success) {
           toast.success('Pricing updated successfully');
           setShowModal(false);
@@ -186,7 +143,7 @@ export default function RoomPricingPage() {
           refetchPricing();
         }
       } else {
-        const response = await createRoomPricing(apiData);
+        const response = await createRoomPricing(formData);
         if (response.success) {
           toast.success('Pricing added successfully');
           setShowModal(false);
@@ -204,25 +161,18 @@ export default function RoomPricingPage() {
 
   const handleEdit = (pricing: RoomPricing) => {
     setEditingPricing(pricing);
-    // Format the dates for HTML date input (YYYY-MM-DD)
-    const formattedStartDate = pricing.start_date 
-      ? new Date(pricing.start_date).toISOString().split('T')[0]
-      : '';
-    const formattedEndDate = pricing.end_date 
-      ? new Date(pricing.end_date).toISOString().split('T')[0]
-      : '';
     
     setFormData({
       room_group_room_type_id: pricing.room_group_room_type_id,
       hotel: pricing.hotel,
-      occupancy: pricing.occupancy,
       day_of_week: pricing.day_of_week,
-      month: pricing.month,
-      holiday_flag: pricing.holiday_flag,
-      start_date: formattedStartDate,
-      end_date: formattedEndDate,
       price: Number(pricing.price)
     });
+    
+    // Set the max occupancy based on the relationship
+    const selectedRel = relationships.find(rel => rel.id === pricing.room_group_room_type_id);
+    setSelectedRelationshipMaxOccupancy(selectedRel?.max_occupancy || pricing.occupancy);
+    
     setShowModal(true);
   };
 
@@ -247,14 +197,10 @@ export default function RoomPricingPage() {
     setFormData({
       room_group_room_type_id: 0,
       hotel: selectedHotel,
-      occupancy: 'single',
-      day_of_week: undefined,
-      month: undefined,
-      holiday_flag: false,
-      start_date: '',
-      end_date: '',
+      day_of_week: 'weekdays',
       price: 0
     });
+    setSelectedRelationshipMaxOccupancy(0);
   };
 
   const openAddModal = () => {
@@ -273,11 +219,10 @@ export default function RoomPricingPage() {
     const matchesSearch = item.group_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.type_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          item.hotel.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.occupancy.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesOccupancy = !selectedOccupancy || item.occupancy === selectedOccupancy;
+                         item.occupancy.toString().includes(searchTerm.toLowerCase());
     const matchesRelationship = !selectedRelationship || item.room_group_room_type_id.toString() === selectedRelationship;
     
-    return matchesSearch && matchesOccupancy && matchesRelationship;
+    return matchesSearch && matchesRelationship;
   });
 
   // Pagination logic
@@ -309,9 +254,8 @@ export default function RoomPricingPage() {
     return hotelObj ? hotelObj.label : hotel;
   };
 
-  const getOccupancyDisplayName = (occupancy: string) => {
-    const occupancyObj = occupancies.find(o => o.value === occupancy);
-    return occupancyObj ? occupancyObj.label : occupancy;
+  const getOccupancyDisplayName = (occupancy: number) => {
+    return occupancy.toString();
   };
 
   if (loading) {
@@ -371,7 +315,7 @@ export default function RoomPricingPage() {
                 </button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
@@ -385,18 +329,6 @@ export default function RoomPricingPage() {
                 <div className="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
                   {getCurrentHotel()?.label || 'Select Resort'}
                 </div>
-                <select
-                  value={selectedOccupancy}
-                  onChange={(e) => setSelectedOccupancy(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  <option value="">All Occupancies</option>
-                  {occupancies.map(occupancy => (
-                    <option key={occupancy.value} value={occupancy.value}>
-                      {occupancy.label}
-                    </option>
-                  ))}
-                </select>
                 <select
                   value={selectedRelationship}
                   onChange={(e) => setSelectedRelationship(e.target.value)}
@@ -415,7 +347,6 @@ export default function RoomPricingPage() {
                 <button
                   onClick={() => {
                     setSearchTerm('');
-                    setSelectedOccupancy('');
                     setSelectedRelationship('');
                   }}
                   className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
@@ -454,10 +385,10 @@ export default function RoomPricingPage() {
                           Occupancy
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Price
+                          Day of Week
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Conditions
+                          Price
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Actions
@@ -489,32 +420,16 @@ export default function RoomPricingPage() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                                                         <div className="text-sm font-semibold text-green-600">
-                               ${Number(item.price).toFixed(2)}
-                             </div>
+                            <div className="flex items-center">
+                              <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                              <span className="text-sm text-gray-900 capitalize">
+                                {item.day_of_week}
+                              </span>
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">
-                              {item.holiday_flag && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 mr-2">
-                                  Holiday
-                                </span>
-                              )}
-                              {item.day_of_week && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2">
-                                  {item.day_of_week.charAt(0).toUpperCase() + item.day_of_week.slice(1)}
-                                </span>
-                              )}
-                              {item.month && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                  {months.find(m => m.value === item.month)?.label}
-                                </span>
-                              )}
-                              {item.start_date && item.end_date && (
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {new Date(item.start_date).toLocaleDateString()} - {new Date(item.end_date).toLocaleDateString()}
-                                </div>
-                              )}
+                            <div className="text-sm font-semibold text-green-600">
+                              ${Number(item.price).toFixed(2)}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -585,14 +500,25 @@ export default function RoomPricingPage() {
                   </label>
                   <select
                     value={formData.room_group_room_type_id || ''}
-                    onChange={(e) => setFormData({ ...formData, room_group_room_type_id: Number(e.target.value) })}
+                    onChange={(e) => {
+                      const relationshipId = Number(e.target.value);
+                      setFormData({ ...formData, room_group_room_type_id: relationshipId });
+                      
+                      // Update max occupancy based on selected relationship
+                      if (relationshipId > 0) {
+                        const selectedRel = relationships.find(rel => rel.id === relationshipId);
+                        setSelectedRelationshipMaxOccupancy(selectedRel?.max_occupancy || 0);
+                      } else {
+                        setSelectedRelationshipMaxOccupancy(0);
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     required
                   >
                     <option value="">Select relationship</option>
                     {relationships.map(rel => (
                       <option key={rel.id} value={rel.id}>
-                        {rel.group_name} - {rel.type_name}
+                        {rel.group_name} - {rel.type_name} (Max: {rel.max_occupancy})
                       </option>
                     ))}
                   </select>
@@ -609,19 +535,25 @@ export default function RoomPricingPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Occupancy *
+                    Max Occupancy
+                  </label>
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
+                    {selectedRelationshipMaxOccupancy > 0 ? selectedRelationshipMaxOccupancy.toString() : 'Select Room Type first'}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Day of Week *
                   </label>
                   <select
-                    value={formData.occupancy}
-                    onChange={(e) => setFormData({ ...formData, occupancy: e.target.value as any })}
+                    value={formData.day_of_week}
+                    onChange={(e) => setFormData({ ...formData, day_of_week: e.target.value as 'weekdays' | 'weekends' })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     required
                   >
-                    {occupancies.map(occupancy => (
-                      <option key={occupancy.value} value={occupancy.value}>
-                        {occupancy.label}
-                      </option>
-                    ))}
+                    <option value="weekdays">Weekdays</option>
+                    <option value="weekends">Weekends</option>
                   </select>
                 </div>
 
@@ -640,79 +572,6 @@ export default function RoomPricingPage() {
                     required
                   />
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Day of Week
-                  </label>
-                  <select
-                    value={formData.day_of_week || ''}
-                                         onChange={(e) => setFormData({ ...formData, day_of_week: (e.target.value as any) || undefined })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  >
-                    <option value="">Any day</option>
-                    {daysOfWeek.map(day => (
-                      <option key={day.value} value={day.value}>
-                        {day.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Month
-                  </label>
-                  <select
-                    value={formData.month || ''}
-                    onChange={(e) => setFormData({ ...formData, month: e.target.value ? parseInt(e.target.value) : undefined })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  >
-                    <option value="">Any month</option>
-                    {months.map(month => (
-                      <option key={month.value} value={month.value}>
-                        {month.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="holiday_flag"
-                  checked={formData.holiday_flag}
-                  onChange={(e) => setFormData({ ...formData, holiday_flag: e.target.checked })}
-                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                />
-                <label htmlFor="holiday_flag" className="ml-2 block text-sm text-gray-900">
-                  Holiday pricing
-                </label>
               </div>
 
               <div className="flex items-center justify-end space-x-3 pt-4">

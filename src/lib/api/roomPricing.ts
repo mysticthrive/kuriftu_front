@@ -6,12 +6,8 @@ export interface RoomPricing {
   pricing_id: number;
   room_group_room_type_id: number;
   hotel: string;
-  occupancy: 'single' | 'double' | 'triple' | 'child';
-  day_of_week?: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
-  month?: number; // 1-12
-  holiday_flag: boolean;
-  start_date?: string; // DATE format
-  end_date?: string; // DATE format
+  occupancy: number; // Integer representing number of people
+  day_of_week: 'weekdays' | 'weekends';
   price: number | string; // Can be number or string from database
   created_at: string;
   // Additional fields for display
@@ -22,12 +18,7 @@ export interface RoomPricing {
 export interface CreateRoomPricingData {
   room_group_room_type_id: number;
   hotel: string;
-  occupancy: 'single' | 'double' | 'triple' | 'child';
-  day_of_week?: 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
-  month?: number;
-  holiday_flag?: boolean;
-  start_date?: string;
-  end_date?: string;
+  day_of_week: 'weekdays' | 'weekends';
   price: number;
 }
 
@@ -84,11 +75,6 @@ export const deleteRoomPricing = async (id: number): Promise<ApiResponse<void>> 
 export const getRoomPricingWithFilters = async (filters: {
   hotel?: string;
   occupancy?: string;
-  day_of_week?: string;
-  month?: number;
-  holiday_flag?: boolean;
-  start_date?: string;
-  end_date?: string;
 }): Promise<ApiResponse<RoomPricing[]>> => {
   const queryParams = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
