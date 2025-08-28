@@ -42,6 +42,14 @@ import { useHotel } from '@/contexts/HotelContext';
 import { useHotelData } from '@/hooks/useHotelData';
 import Pagination from '@/components/Pagination';
 
+// Local interface for form data that allows empty strings for price input
+interface FormData {
+  room_group_room_type_id: number;
+  hotel: string;
+  day_of_week: 'weekdays' | 'weekends';
+  price: number | string;
+}
+
 export default function RoomPricingPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -74,7 +82,7 @@ export default function RoomPricingPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const [formData, setFormData] = useState<CreateRoomPricingData>({
+  const [formData, setFormData] = useState<FormData>({
     room_group_room_type_id: 0,
     hotel: selectedHotel,
     day_of_week: 'weekdays',
@@ -151,16 +159,25 @@ export default function RoomPricingPage() {
       return;
     }
 
-    if (formData.price <= 0) {
+    // Convert price to number for validation
+    const price = typeof formData.price === 'string' ? parseFloat(formData.price) || 0 : formData.price;
+    
+    if (price <= 0) {
       toast.error('Price must be greater than 0');
       return;
     }
+
+    // Convert form data to proper format for API
+    const apiData: CreateRoomPricingData = {
+      ...formData,
+      price: price
+    };
 
     try {
       setSubmitting(true);
       
       if (editingPricing) {
-        const response = await updateRoomPricing(editingPricing.pricing_id, formData);
+        const response = await updateRoomPricing(editingPricing.pricing_id, apiData);
         if (response.success) {
           toast.success('Pricing updated successfully');
           setShowModal(false);
@@ -180,7 +197,7 @@ export default function RoomPricingPage() {
           return;
         }
         
-        const response = await createRoomPricing(formData);
+        const response = await createRoomPricing(apiData);
         if (response.success) {
           toast.success('Pricing added successfully');
           setShowModal(false);
@@ -602,8 +619,8 @@ export default function RoomPricingPage() {
                     type="number"
                     step="0.01"
                     min="0"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                    value={formData.price === '' ? '' : formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                     placeholder="0.00"
                     required

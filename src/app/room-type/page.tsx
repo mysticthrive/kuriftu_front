@@ -30,6 +30,14 @@ import {
 } from '@/lib/api/roomTypes';
 import Pagination from '@/components/Pagination';
 
+// Local interface for form data that allows empty strings for max_occupancy input
+interface FormData {
+  type_name: string;
+  description?: string;
+  max_occupancy: number | string;
+  hotel: string;
+}
+
 export default function RoomTypePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -56,7 +64,7 @@ export default function RoomTypePage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingType, setDeletingType] = useState<RoomType | null>(null);
   const [editingType, setEditingType] = useState<RoomType | null>(null);
-  const [formData, setFormData] = useState<CreateRoomTypeData>({
+  const [formData, setFormData] = useState<FormData>({
     type_name: '',
     description: '',
     max_occupancy: 2,
@@ -93,7 +101,7 @@ export default function RoomTypePage() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'max_occupancy' ? parseInt(value) || 2 : value
+      [name]: name === 'max_occupancy' ? (value === '' ? '' : parseInt(value) || 2) : value
     }));
     // Clear error when user starts typing
     if (formErrors[name]) {
@@ -113,7 +121,10 @@ export default function RoomTypePage() {
       errors.type_name = 'Type name must be less than 100 characters';
     }
 
-    if (formData.max_occupancy && (formData.max_occupancy < 1 || formData.max_occupancy > 10)) {
+    // Convert max_occupancy to number for validation
+    const maxOccupancy = typeof formData.max_occupancy === 'string' ? parseInt(formData.max_occupancy) || 0 : formData.max_occupancy;
+    
+    if (maxOccupancy < 1 || maxOccupancy > 10) {
       errors.max_occupancy = 'Max occupancy must be between 1 and 10';
     }
 
@@ -128,19 +139,25 @@ export default function RoomTypePage() {
       return;
     }
 
+    // Convert form data to proper format for API
+    const apiData: CreateRoomTypeData = {
+      ...formData,
+      max_occupancy: typeof formData.max_occupancy === 'string' ? parseInt(formData.max_occupancy) || 2 : formData.max_occupancy
+    };
+
     try {
       setSubmitting(true);
       
       if (editingType) {
         // Update existing room type
-        const response = await updateRoomType(editingType.room_type_id, formData);
+        const response = await updateRoomType(editingType.room_type_id, apiData);
         if (response.success) {
           toast.success(response.message || 'Room type updated successfully');
           refetchRoomTypes();
         }
       } else {
         // Create new room type
-        const response = await createRoomType(formData);
+        const response = await createRoomType(apiData);
         if (response.success && response.data) {
           toast.success(response.message || 'Room type created successfully');
           refetchRoomTypes();
@@ -483,7 +500,7 @@ export default function RoomTypePage() {
                     name="max_occupancy"
                     min="1"
                     max="10"
-                    value={formData.max_occupancy}
+                    value={formData.max_occupancy === '' ? '' : formData.max_occupancy}
                     onChange={handleInputChange}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
                       formErrors.max_occupancy ? 'border-red-500' : 'border-gray-300'

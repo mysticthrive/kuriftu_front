@@ -33,6 +33,20 @@ import {
 } from '@/lib/api/promoCodes';
 import Pagination from '@/components/Pagination';
 
+// Local interface for form data that allows empty strings for number inputs
+interface FormData {
+  code: string;
+  description?: string;
+  discount_type: 'percentage' | 'fixed_amount';
+  discount_value: number | string;
+  min_amount: number | string;
+  max_discount: number | string;
+  valid_from: string;
+  valid_until: string;
+  max_usage: number | string;
+  status: 'active' | 'inactive' | 'expired';
+}
+
 export default function PromoCodePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -47,7 +61,7 @@ export default function PromoCodePage() {
   const [deletingCode, setDeletingCode] = useState<PromoCode | null>(null);
   const [editingCode, setEditingCode] = useState<PromoCode | null>(null);
   const [totalItems, setTotalItems] = useState(0);
-  const [formData, setFormData] = useState<CreatePromoCodeData>({
+  const [formData, setFormData] = useState<FormData>({
     code: '',
     description: '',
     discount_type: 'percentage',
@@ -105,7 +119,7 @@ export default function PromoCodePage() {
     setFormData(prev => ({
       ...prev,
       [name]: ['discount_value', 'min_amount', 'max_discount', 'max_usage'].includes(name) 
-        ? parseFloat(value) || 0 
+        ? (value === '' ? '' : parseFloat(value) || 0)
         : value
     }));
     // Clear error when user starts typing
@@ -126,19 +140,25 @@ export default function PromoCodePage() {
       errors.code = 'Promo code must be less than 50 characters';
     }
 
-    if (formData.discount_value <= 0) {
+    // Convert number fields to numbers for validation
+    const discountValue = typeof formData.discount_value === 'string' ? parseFloat(formData.discount_value) || 0 : formData.discount_value;
+    const minAmount = typeof formData.min_amount === 'string' ? parseFloat(formData.min_amount) || 0 : formData.min_amount;
+    const maxDiscount = typeof formData.max_discount === 'string' ? parseFloat(formData.max_discount) || 0 : formData.max_discount;
+    const maxUsage = typeof formData.max_usage === 'string' ? parseFloat(formData.max_usage) || 0 : formData.max_usage;
+
+    if (discountValue <= 0) {
       errors.discount_value = 'Discount value must be greater than 0';
     }
 
-    if (formData.discount_type === 'percentage' && formData.discount_value > 100) {
+    if (formData.discount_type === 'percentage' && discountValue > 100) {
       errors.discount_value = 'Percentage discount cannot exceed 100%';
     }
 
-    if ((formData.min_amount || 0) < 0) {
+    if (minAmount < 0) {
       errors.min_amount = 'Minimum amount cannot be negative';
     }
 
-    if (formData.max_discount && formData.max_discount <= 0) {
+    if (maxDiscount && maxDiscount <= 0) {
       errors.max_discount = 'Maximum discount must be greater than 0';
     }
 
@@ -156,7 +176,7 @@ export default function PromoCodePage() {
       errors.valid_until = 'Valid until date must be after valid from date';
     }
 
-    if (formData.max_usage && formData.max_usage <= 0) {
+    if (maxUsage && maxUsage <= 0) {
       errors.max_usage = 'Maximum usage must be greater than 0';
     }
 
@@ -174,13 +194,14 @@ export default function PromoCodePage() {
     try {
       setSubmitting(true);
       
-      // Prepare data for API - convert empty strings to undefined for optional fields
-      const apiData = {
+      // Convert form data to proper format for API
+      const apiData: CreatePromoCodeData = {
         ...formData,
-        description: formData.description || undefined,
-        min_amount: formData.min_amount || undefined,
-        max_discount: formData.max_discount || undefined,
-        max_usage: formData.max_usage || undefined
+        discount_value: typeof formData.discount_value === 'string' ? parseFloat(formData.discount_value) || 0 : formData.discount_value,
+        min_amount: typeof formData.min_amount === 'string' ? parseFloat(formData.min_amount) || undefined : formData.min_amount,
+        max_discount: typeof formData.max_discount === 'string' ? parseFloat(formData.max_discount) || undefined : formData.max_discount,
+        max_usage: typeof formData.max_usage === 'string' ? parseFloat(formData.max_usage) || undefined : formData.max_usage,
+        description: formData.description || undefined
       };
       
       if (editingCode) {
@@ -641,7 +662,7 @@ export default function PromoCodePage() {
                     step="0.01"
                     min="0"
                     max={formData.discount_type === 'percentage' ? '100' : undefined}
-                    value={formData.discount_value}
+                    value={formData.discount_value === '' ? '' : formData.discount_value}
                     onChange={handleInputChange}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       formErrors.discount_value ? 'border-red-500' : 'border-gray-300'
@@ -663,7 +684,7 @@ export default function PromoCodePage() {
                     name="min_amount"
                     step="0.01"
                     min="0"
-                    value={formData.min_amount}
+                    value={formData.min_amount === '' ? '' : formData.min_amount}
                     onChange={handleInputChange}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       formErrors.min_amount ? 'border-red-500' : 'border-gray-300'
@@ -685,7 +706,7 @@ export default function PromoCodePage() {
                     name="max_discount"
                     step="0.01"
                     min="0"
-                    value={formData.max_discount}
+                    value={formData.max_discount === '' ? '' : formData.max_discount}
                     onChange={handleInputChange}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       formErrors.max_discount ? 'border-red-500' : 'border-gray-300'
@@ -744,7 +765,7 @@ export default function PromoCodePage() {
                     id="max_usage"
                     name="max_usage"
                     min="0"
-                    value={formData.max_usage}
+                    value={formData.max_usage === '' ? '' : formData.max_usage}
                     onChange={handleInputChange}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       formErrors.max_usage ? 'border-red-500' : 'border-gray-300'

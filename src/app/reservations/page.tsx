@@ -40,6 +40,23 @@ import { getRoomsByGroupAndType } from '@/lib/api/rooms';
 import { useHotel } from '@/contexts/HotelContext';
 import Pagination from '@/components/Pagination';
 
+// Local interface for form data that allows empty strings for number inputs
+interface FormData {
+  guest_id: number;
+  room_id: number;
+  check_in_date: string;
+  check_out_date: string;
+  check_in_time: string;
+  check_out_time: string;
+  num_adults: number | string;
+  num_children: number | string;
+  children_ages: string;
+  special_requests: string;
+  status: 'confirmed' | 'cancelled' | 'completed';
+  payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
+  source: 'website' | 'mobile_app' | 'walk_in' | 'agent' | 'call_center';
+}
+
 export default function ReservationsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -54,7 +71,7 @@ export default function ReservationsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingReservation, setDeletingReservation] = useState<Reservation | null>(null);
   const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
-  const [formData, setFormData] = useState<CreateReservationData>({
+  const [formData, setFormData] = useState<FormData>({
     guest_id: 0,
     room_id: 0,
     check_in_date: '',
@@ -184,7 +201,7 @@ export default function ReservationsPage() {
     setFormData(prev => ({
       ...prev,
       [name]: name === 'guest_id' || name === 'room_id' || name === 'num_adults' || name === 'num_children' 
-        ? parseInt(processedValue) || 0 
+        ? (processedValue === '' ? '' : parseInt(processedValue) || 0)
         : processedValue
     }));
     
@@ -227,13 +244,18 @@ export default function ReservationsPage() {
         new Date(formData.check_in_date) >= new Date(formData.check_out_date)) {
       errors.check_out_date = 'Check-out date must be after check-in date';
     }
-    if (formData.num_adults < 1) {
+    
+    // Convert string numbers to actual numbers for validation
+    const numAdults = typeof formData.num_adults === 'string' ? parseInt(formData.num_adults) || 0 : formData.num_adults;
+    const numChildren = typeof formData.num_children === 'string' ? parseInt(formData.num_children) || 0 : formData.num_children;
+    
+    if (numAdults < 1) {
       errors.num_adults = 'At least one adult is required';
     }
     
     // Check if number of adults exceeds room's max occupancy
     const maxOccupancy = getSelectedRoomMaxOccupancy();
-    if (maxOccupancy && formData.num_adults > maxOccupancy) {
+    if (maxOccupancy && numAdults > maxOccupancy) {
       errors.num_adults = `Number of adults cannot exceed room's maximum occupancy (${maxOccupancy})`;
     }
     if (!formData.status) {
@@ -269,12 +291,12 @@ export default function ReservationsPage() {
           }
           
           // Check if number of ages matches number of children
-          if ((formData.num_children || 0) > 0 && ages.length !== (formData.num_children || 0)) {
-            errors.children_ages = `Number of ages (${ages.length}) must match number of children (${formData.num_children || 0})`;
+          if (numChildren > 0 && ages.length !== numChildren) {
+            errors.children_ages = `Number of ages (${ages.length}) must match number of children (${numChildren})`;
           }
         }
       }
-    } else if ((formData.num_children || 0) > 0) {
+    } else if (numChildren > 0) {
       // If there are children but no ages provided, show a warning
       errors.children_ages = 'Please provide ages for all children (comma-separated, no spaces)';
     }
@@ -290,12 +312,19 @@ export default function ReservationsPage() {
       return;
     }
 
+    // Convert form data to proper format for API
+    const apiData: CreateReservationData = {
+      ...formData,
+      num_adults: typeof formData.num_adults === 'string' ? parseInt(formData.num_adults) || 1 : formData.num_adults,
+      num_children: typeof formData.num_children === 'string' ? parseInt(formData.num_children) || 0 : formData.num_children,
+    };
+
     try {
       setSubmitting(true);
       
       if (editingReservation) {
         // Update existing reservation
-        const response = await updateReservation(editingReservation.reservation_id, formData);
+        const response = await updateReservation(editingReservation.reservation_id, apiData);
         if (response.success) {
           setReservations(prev => 
             prev.map(reservation => 
@@ -308,7 +337,7 @@ export default function ReservationsPage() {
         }
       } else {
         // Create new reservation
-        const response = await createReservation(formData);
+        const response = await createReservation(apiData);
         if (response.success && response.data) {
           setReservations(prev => [response.data!, ...prev]);
           toast.success(response.message || 'Reservation created successfully');
@@ -483,8 +512,11 @@ export default function ReservationsPage() {
       return 'Ages must be whole numbers between 0-18 (no decimals)';
     }
     
-    if ((formData.num_children || 0) > 0 && ages.length !== (formData.num_children || 0)) {
-      return `Expected ${formData.num_children || 0} ages for ${formData.num_children || 0} children`;
+    // Convert num_children to number for comparison
+    const numChildren = typeof formData.num_children === 'string' ? parseInt(formData.num_children) || 0 : formData.num_children;
+    
+    if (numChildren > 0 && ages.length !== numChildren) {
+      return `Expected ${numChildren} ages for ${numChildren} children`;
     }
     
     return '';
@@ -1293,7 +1325,7 @@ export default function ReservationsPage() {
                     name="num_adults"
                     min="1"
                     max={getSelectedRoomMaxOccupancy() || 10}
-                    value={formData.num_adults}
+                    value={formData.num_adults === '' ? '' : formData.num_adults}
                     onChange={handleInputChange}
                     readOnly
                     className={`w-full px-3 py-2 border rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed ${
@@ -1320,7 +1352,7 @@ export default function ReservationsPage() {
                     name="num_children"
                     min="0"
                     max="10"
-                    value={formData.num_children}
+                    value={formData.num_children === '' ? '' : formData.num_children}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   />

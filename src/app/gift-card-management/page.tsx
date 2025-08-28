@@ -31,6 +31,17 @@ import {
 } from '@/lib/api/giftCards';
 import { getGuests, Guest } from '@/lib/api/guests';
 
+// Local interface for form data that allows empty strings for initial_amount input
+interface FormData {
+  card_type: 'eCard' | 'physical';
+  initial_amount: number | string;
+  issued_to_guest_id?: number;
+  expiry_date?: string;
+  status?: 'active' | 'redeemed' | 'expired' | 'cancelled';
+  payment_status?: 'pending' | 'completed' | 'failed' | 'refunded' | 'cancelled';
+  notes?: string;
+}
+
 export default function GiftCardManagementPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -46,7 +57,7 @@ export default function GiftCardManagementPage() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [editingGiftCard, setEditingGiftCard] = useState<GiftCard | null>(null);
   const [viewingGiftCard, setViewingGiftCard] = useState<GiftCard | null>(null);
-  const [formData, setFormData] = useState<CreateGiftCardRequest>({
+  const [formData, setFormData] = useState<FormData>({
     card_type: 'eCard',
     initial_amount: 0,
     status: 'active',
@@ -146,7 +157,7 @@ export default function GiftCardManagementPage() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'initial_amount' ? parseFloat(value) || 0 : value
+      [name]: name === 'initial_amount' ? (value === '' ? '' : parseFloat(value) || 0) : value
     }));
     
     // Clear error when user starts typing
@@ -165,7 +176,10 @@ export default function GiftCardManagementPage() {
       errors.card_type = 'Card type is required';
     }
     
-    if (!formData.initial_amount || formData.initial_amount <= 0) {
+    // Convert initial_amount to number for validation
+    const initialAmount = typeof formData.initial_amount === 'string' ? parseFloat(formData.initial_amount) || 0 : formData.initial_amount;
+    
+    if (!initialAmount || initialAmount <= 0) {
       errors.initial_amount = 'Initial amount must be greater than 0';
     }
     
@@ -193,12 +207,18 @@ export default function GiftCardManagementPage() {
     if (!validateForm()) {
       return;
     }
+
+    // Convert form data to proper format for API
+    const apiData: CreateGiftCardRequest = {
+      ...formData,
+      initial_amount: typeof formData.initial_amount === 'string' ? parseFloat(formData.initial_amount) || 0 : formData.initial_amount
+    };
     
     try {
       setSubmitting(true);
       
       if (editingGiftCard) {
-        const response = await updateGiftCard(editingGiftCard.gift_card_id, formData);
+        const response = await updateGiftCard(editingGiftCard.gift_card_id, apiData);
         if (response.success) {
           toast.success('Gift card updated successfully');
           handleCloseModal();
@@ -207,7 +227,7 @@ export default function GiftCardManagementPage() {
           toast.error(response.message || 'Failed to update gift card');
         }
       } else {
-        const response = await createGiftCard(formData);
+        const response = await createGiftCard(apiData);
         if (response.success) {
           toast.success('Gift card created successfully');
           handleCloseModal();
@@ -578,7 +598,7 @@ export default function GiftCardManagementPage() {
                   <input
                     type="number"
                     name="initial_amount"
-                    value={formData.initial_amount}
+                    value={formData.initial_amount === '' ? '' : formData.initial_amount}
                     onChange={handleInputChange}
                     min="0"
                     step="0.01"
