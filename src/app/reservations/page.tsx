@@ -528,6 +528,31 @@ export default function ReservationsPage() {
     };
   };
 
+  // Calculate room price based on actual days of the week (weekdays vs weekends)
+  const calculateRoomPriceByDays = (checkInDate: string, checkOutDate: string, weekdayPrice: number, weekendPrice: number) => {
+    if (!checkInDate || !checkOutDate || !weekdayPrice || !weekendPrice) return 0;
+    
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+    let totalPrice = 0;
+    let currentDate = new Date(checkIn);
+    
+    while (currentDate < checkOut) {
+      const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      
+      // Determine if it's a weekday (Monday-Friday) or weekend (Saturday-Sunday)
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // Sunday or Saturday
+      
+      // Add price for this day
+      totalPrice += isWeekend ? weekendPrice : weekdayPrice;
+      
+      // Move to next day
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return totalPrice;
+  };
+
   // Calculate early check-in and late check-out charges
   const calculateCheckInOutCharges = (checkInTime: string, checkOutTime: string, baseRoomPrice: number) => {
     let earlyCheckInCharge = 0;
@@ -954,6 +979,10 @@ export default function ReservationsPage() {
                     {rooms.map((room) => (
                       <option key={room.room_id} value={room.room_id}>
                         {room.room_number} - {room.hotel} ({room.status}) - Max: {room.max_occupancy || 'N/A'} persons
+                        {room.weekday_price && room.weekend_price ? 
+                          ` - Weekdays: $${Number(room.weekday_price).toFixed(2)} | Weekends: $${Number(room.weekend_price).toFixed(2)}` : 
+                          ' - Pricing not set'
+                        }
                       </option>
                     ))}
                   </select>
@@ -1196,28 +1225,60 @@ export default function ReservationsPage() {
                       })()}
                     </div>
                   )}
-                  {formData.check_in_time && formData.check_out_time && formData.check_in_date && formData.check_out_date && (
+                  {formData.room_id && formData.check_in_date && formData.check_out_date && (
+                    <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-sm font-medium text-blue-800 mb-1">Room Pricing Preview:</p>
+                      {(() => {
+                        const selectedRoom = rooms.find(room => room.room_id === formData.room_id);
+                        if (selectedRoom && selectedRoom.weekday_price && selectedRoom.weekend_price) {
+                          const weekdayPrice = Number(selectedRoom.weekday_price);
+                          const weekendPrice = Number(selectedRoom.weekend_price);
+                          const roomPrice = calculateRoomPriceByDays(
+                            formData.check_in_date, 
+                            formData.check_out_date, 
+                            weekdayPrice, 
+                            weekendPrice
+                          );
+                          const checkInDate = new Date(formData.check_in_date);
+                          const checkOutDate = new Date(formData.check_out_date);
+                          const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+                          
+                          return (
+                            <div className="text-xs text-blue-700 space-y-1">
+                              <p><strong>Room Pricing for {nights} nights:</strong></p>
+                              <p>Weekday Rate: ${weekdayPrice.toFixed(2)} | Weekend Rate: ${weekendPrice.toFixed(2)}</p>
+                              <p><strong>Total Room Cost:</strong> ${roomPrice.toFixed(2)}</p>
+                            </div>
+                          );
+                        }
+                        return <p className="text-xs text-blue-700">Room pricing not available</p>;
+                      })()}
+                    </div>
+                  )}
+                  {formData.check_in_time && formData.check_out_time && formData.check_in_date && formData.check_out_date && formData.room_id && (
                     <div className="mt-2 p-3 bg-purple-50 rounded-lg border border-purple-200">
                       <p className="text-sm font-medium text-purple-800 mb-1">Check-in/out Charges Preview:</p>
                       {(() => {
-                        const checkInDate = new Date(formData.check_in_date);
-                        const checkOutDate = new Date(formData.check_out_date);
-                        const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-                        // Estimate base room price (this would be more accurate if we had room pricing data)
-                        const estimatedBasePrice = 100; // Placeholder - in real app, get from room pricing
-                        const checkInOutCharges = calculateCheckInOutCharges(formData.check_in_time, formData.check_out_time, estimatedBasePrice);
-                        if (checkInOutCharges.earlyCheckInCharge > 0 || checkInOutCharges.lateCheckOutCharge > 0) {
-                          return (
-                            <div className="text-xs text-purple-700 space-y-1">
-                              {checkInOutCharges.earlyCheckInCharge > 0 && (
-                                <p><strong>Early Check-in:</strong> ${checkInOutCharges.earlyCheckInCharge.toFixed(2)}</p>
-                              )}
-                              {checkInOutCharges.lateCheckOutCharge > 0 && (
-                                <p><strong>Late Check-out:</strong> ${checkInOutCharges.lateCheckOutCharge.toFixed(2)}</p>
-                              )}
-                              <p><strong>Total Check-in/out Charges:</strong> ${(checkInOutCharges.earlyCheckInCharge + checkInOutCharges.lateCheckOutCharge).toFixed(2)}</p>
-                            </div>
-                          );
+                        const selectedRoom = rooms.find(room => room.room_id === formData.room_id);
+                        if (selectedRoom && selectedRoom.weekday_price && selectedRoom.weekend_price) {
+                          // Use weekday price as base for check-in/out charges (or average of both)
+                          const weekdayPrice = Number(selectedRoom.weekday_price);
+                          const weekendPrice = Number(selectedRoom.weekend_price);
+                          const baseRoomPrice = (weekdayPrice + weekendPrice) / 2;
+                          const checkInOutCharges = calculateCheckInOutCharges(formData.check_in_time, formData.check_out_time, baseRoomPrice);
+                          if (checkInOutCharges.earlyCheckInCharge > 0 || checkInOutCharges.lateCheckOutCharge > 0) {
+                            return (
+                              <div className="text-xs text-purple-700 space-y-1">
+                                {checkInOutCharges.earlyCheckInCharge > 0 && (
+                                  <p><strong>Early Check-in:</strong> ${checkInOutCharges.earlyCheckInCharge.toFixed(2)}</p>
+                                )}
+                                {checkInOutCharges.lateCheckOutCharge > 0 && (
+                                  <p><strong>Late Check-out:</strong> ${checkInOutCharges.lateCheckOutCharge.toFixed(2)}</p>
+                                )}
+                                <p><strong>Total Check-in/out Charges:</strong> ${(checkInOutCharges.earlyCheckInCharge + checkInOutCharges.lateCheckOutCharge).toFixed(2)}</p>
+                              </div>
+                            );
+                          }
                         }
                         return <p className="text-xs text-purple-700">No additional check-in/out charges</p>;
                       })()}

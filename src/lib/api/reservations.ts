@@ -74,6 +74,8 @@ export interface Room {
   room_type?: string;
   room_group?: string;
   max_occupancy?: number;
+  weekday_price?: number;
+  weekend_price?: number;
 }
 
 export interface ApiResponse<T> {

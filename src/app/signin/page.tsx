@@ -68,10 +68,21 @@ export default function SignInPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-blue-100">
-            <User className="h-6 w-6 text-blue-600" />
+          {/* Logo and Project Name */}
+          <div className="flex flex-col items-center">
+            <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-white shadow-lg p-2">
+              <img 
+                src="/images/logo.png" 
+                alt="Kuriftu Logo" 
+                className="h-12 w-12 object-contain"
+              />
+            </div>
+            <h1 className="mt-4 text-center text-2xl font-bold text-gray-900">
+              Kuriftu Resorts
+            </h1>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          
+          <h2 className="mt-8 text-center text-3xl font-extrabold text-gray-900">
             {isLogin ? 'Sign in to your account' : 'Create your account'}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">

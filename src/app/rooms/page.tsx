@@ -423,7 +423,7 @@ export default function RoomsPage() {
                           Group
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Price
+                          Pricing
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Status
@@ -485,11 +485,21 @@ export default function RoomsPage() {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <DollarSign className="w-4 h-4 text-gray-400 mr-2" />
-                              <span className="text-sm font-semibold text-green-600">
-                                {getRoomPrice(room) ? `$${Number(getRoomPrice(room)).toFixed(2)}` : 'Not set'}
-                              </span>
+                            <div className="flex flex-col">
+                              <div className="flex items-center mb-1">
+                                <DollarSign className="w-4 h-4 text-gray-400 mr-2" />
+                                <span className="text-sm font-semibold text-green-600">
+                                  {room.weekday_price ? `$${Number(room.weekday_price).toFixed(2)}` : 'Not set'}
+                                </span>
+                                <span className="text-xs text-gray-500 ml-1">(Weekdays)</span>
+                              </div>
+                              <div className="flex items-center">
+                                <DollarSign className="w-4 h-4 text-gray-400 mr-2" />
+                                <span className="text-sm font-semibold text-blue-600">
+                                  {room.weekend_price ? `$${Number(room.weekend_price).toFixed(2)}` : 'Not set'}
+                                </span>
+                                <span className="text-xs text-gray-500 ml-1">(Weekends)</span>
+                              </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">

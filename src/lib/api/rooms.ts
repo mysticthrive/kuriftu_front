@@ -13,6 +13,8 @@ export interface Room {
   group_name?: string;
   type_name?: string;
   max_occupancy?: number;
+  weekday_price?: number;
+  weekend_price?: number;
 }
 
 export interface CreateRoomData {
