@@ -86,8 +86,9 @@ export interface ApiResponse<T> {
 }
 
 // Get all reservations
-export const getReservations = async (): Promise<ApiResponse<Reservation[]>> => {
-  return await authenticatedGet<ApiResponse<Reservation[]>>('/reservations');
+export const getReservations = async (hotel?: string): Promise<ApiResponse<Reservation[]>> => {
+  const url = hotel ? `/reservations?hotel=${hotel}` : '/reservations';
+  return await authenticatedGet<ApiResponse<Reservation[]>>(url);
 };
 
 // Get single reservation by ID

@@ -53,6 +53,11 @@ export const getAvailableRooms = async (): Promise<ApiResponse<Room[]>> => {
   return await authenticatedGet<ApiResponse<Room[]>>('/rooms/status/available');
 };
 
+// GET rooms by room group and room type
+export const getRoomsByGroupAndType = async (roomGroupId: number, roomTypeId: number): Promise<ApiResponse<Room[]>> => {
+  return await authenticatedGet<ApiResponse<Room[]>>(`/rooms/by-group-type/${roomGroupId}/${roomTypeId}`);
+};
+
 // POST create new room
 export const createRoom = async (data: CreateRoomData): Promise<ApiResponse<Room>> => {
   return await authenticatedPost<ApiResponse<Room>>('/rooms', data);

@@ -28,12 +28,16 @@ import {
   createReservation, 
   updateReservation, 
   deleteReservation,
-  getRoomsList,
   CreateReservationData,
-  UpdateReservationData,
-  Room
+  UpdateReservationData
 } from '@/lib/api/reservations';
+import { Room, getRooms, getRoomsByHotel } from '@/lib/api/rooms';
 import { Guest, getGuests } from '@/lib/api/guests';
+import { RoomGroup, getRoomGroupsByHotel } from '@/lib/api/roomGroups';
+import { RoomType, getRoomTypesByHotel } from '@/lib/api/roomTypes';
+import { getRoomTypesForGroup } from '@/lib/api/roomGroupRoomTypes';
+import { getRoomsByGroupAndType } from '@/lib/api/rooms';
+import { useHotel } from '@/contexts/HotelContext';
 import Pagination from '@/components/Pagination';
 
 export default function ReservationsPage() {
@@ -74,6 +78,15 @@ export default function ReservationsPage() {
   const [showGuestDropdown, setShowGuestDropdown] = useState(false);
   const [selectedGuestIndex, setSelectedGuestIndex] = useState(-1);
   const guestDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Room selection states
+  const [roomGroups, setRoomGroups] = useState<RoomGroup[]>([]);
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
+  const [availableRoomTypes, setAvailableRoomTypes] = useState<RoomType[]>([]);
+  const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
+  const [selectedRoomGroup, setSelectedRoomGroup] = useState<number | null>(null);
+  const [selectedRoomType, setSelectedRoomType] = useState<number | null>(null);
+  const { selectedHotel } = useHotel();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -85,7 +98,18 @@ export default function ReservationsPage() {
     if (user) {
       fetchData();
     }
-  }, [user]);
+  }, [user, selectedHotel]);
+
+  // Reset room selection states when hotel changes
+  useEffect(() => {
+    if (selectedHotel) {
+      setSelectedRoomGroup(null);
+      setSelectedRoomType(null);
+      setAvailableRoomTypes([]);
+      setAvailableRooms([]);
+      setFormData(prev => ({ ...prev, room_id: 0 }));
+    }
+  }, [selectedHotel]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -103,10 +127,12 @@ export default function ReservationsPage() {
   const fetchData = async () => {
     try {
       setLoadingData(true);
-      const [reservationsRes, guestsRes, roomsRes] = await Promise.all([
-        getReservations(),
+      const [reservationsRes, guestsRes, roomsRes, roomGroupsRes, roomTypesRes] = await Promise.all([
+        getReservations(selectedHotel),
         getGuests(),
-        getRoomsList()
+        getRoomsByHotel(selectedHotel),
+        getRoomGroupsByHotel(selectedHotel),
+        getRoomTypesByHotel(selectedHotel)
       ]);
       
       if (reservationsRes.success && reservationsRes.data) {
@@ -117,6 +143,12 @@ export default function ReservationsPage() {
       }
       if (roomsRes.success && roomsRes.data) {
         setRooms(roomsRes.data);
+      }
+      if (roomGroupsRes.success && roomGroupsRes.data) {
+        setRoomGroups(roomGroupsRes.data);
+      }
+      if (roomTypesRes.success && roomTypesRes.data) {
+        setRoomTypes(roomTypesRes.data);
       }
     } catch (error: any) {
       console.error('Error fetching data:', error);
@@ -324,8 +356,30 @@ export default function ReservationsPage() {
       status: reservation.status,
       payment_status: reservation.payment_status,
       source: reservation.source,
-
     });
+    
+    // Set room group and room type for editing
+    if (reservation.room_id) {
+      const selectedRoom = rooms.find(room => room.room_id === reservation.room_id);
+      if (selectedRoom && selectedRoom.group_name && selectedRoom.type_name) {
+        // Find the room group and room type for this room
+        const roomGroup = roomGroups.find(group => 
+          group.group_name === selectedRoom.group_name
+        );
+        const roomType = roomTypes.find(type => 
+          type.type_name === selectedRoom.type_name
+        );
+        
+        if (roomGroup) {
+          setSelectedRoomGroup(roomGroup.room_group_id);
+          handleRoomGroupChange(roomGroup.room_group_id);
+        }
+        if (roomType) {
+          setSelectedRoomType(roomType.room_type_id);
+        }
+      }
+    }
+    
     setShowModal(true);
   };
 
@@ -379,6 +433,12 @@ export default function ReservationsPage() {
     setFormErrors({});
     setGuestSearchTerm('');
     setShowGuestDropdown(false);
+    
+    // Reset room selection states
+    setSelectedRoomGroup(null);
+    setSelectedRoomType(null);
+    setAvailableRoomTypes([]);
+    setAvailableRooms([]);
   };
 
   const filteredGuests = guests.filter(guest =>
@@ -487,6 +547,73 @@ export default function ReservationsPage() {
   const getSelectedRoomMaxOccupancy = () => {
     if (!formData.room_id) return null;
     return rooms.find(room => room.room_id === formData.room_id)?.max_occupancy || null;
+  };
+
+  // Handle room group selection
+  const handleRoomGroupChange = async (roomGroupId: number) => {
+    setSelectedRoomGroup(roomGroupId);
+    setSelectedRoomType(null);
+    setFormData(prev => ({ ...prev, room_id: 0 }));
+    setAvailableRoomTypes([]);
+    setAvailableRooms([]);
+    
+    if (roomGroupId) {
+      try {
+        const response = await getRoomTypesForGroup(roomGroupId);
+        if (response.success && response.data) {
+          // Map the response to RoomType format
+          const roomTypesForGroup = response.data.map((item: any) => ({
+            room_type_id: item.room_type_id,
+            type_name: item.type_name,
+            description: item.type_description,
+            max_occupancy: item.max_occupancy,
+            hotel: selectedHotel,
+            created_at: item.created_at,
+            updated_at: item.created_at
+          }));
+          setAvailableRoomTypes(roomTypesForGroup);
+        }
+      } catch (error: any) {
+        console.error('Error fetching room types for group:', error);
+        toast.error('Failed to fetch room types for selected group');
+      }
+    }
+  };
+
+  // Handle room type selection
+  const handleRoomTypeChange = async (roomTypeId: number) => {
+    setSelectedRoomType(roomTypeId);
+    setFormData(prev => ({ ...prev, room_id: 0 }));
+    setAvailableRooms([]);
+    
+    if (roomTypeId && selectedRoomGroup) {
+      try {
+        const response = await getRoomsByGroupAndType(selectedRoomGroup, roomTypeId);
+        if (response.success && response.data) {
+          setAvailableRooms(response.data);
+        }
+      } catch (error: any) {
+        console.error('Error fetching rooms for group and type:', error);
+        toast.error('Failed to fetch rooms for selected group and type');
+      }
+    }
+  };
+
+  // Handle room selection
+  const handleRoomChange = (roomId: number) => {
+    setFormData(prev => ({ ...prev, room_id: roomId }));
+    
+    // Auto-set number of adults when room is selected
+    if (roomId) {
+      const selectedRoom = availableRooms.find(room => room.room_id === roomId);
+      if (selectedRoom && selectedRoom.max_occupancy) {
+        setFormData(prev => ({
+          ...prev,
+          room_id: roomId,
+          num_adults: selectedRoom.max_occupancy || 1
+        }));
+      }
+    }
   };
 
   // Calculate children pricing breakdown
@@ -623,6 +750,11 @@ export default function ReservationsPage() {
                   </div>
                   <div>
                     <h1 className="text-3xl font-bold text-gray-900">Reservations</h1>
+                    {selectedHotel && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        Viewing reservations for: <span className="font-medium capitalize">{selectedHotel}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
                 <button
@@ -662,12 +794,16 @@ export default function ReservationsPage() {
               {loadingData ? (
                 <div className="p-8 text-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-500">Loading reservations...</p>
+                  <p className="mt-2 text-gray-500">
+                    {selectedHotel ? `Loading reservations for ${selectedHotel}...` : 'Loading reservations...'}
+                  </p>
                 </div>
               ) : filteredReservations.length === 0 ? (
                 <div className="p-8 text-center">
                   <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No reservations found</h3>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    {selectedHotel ? `No reservations found for ${selectedHotel}` : 'No reservations found'}
+                  </h3>
                   <p className="text-gray-500 mb-4">
                     {searchTerm ? 'Try adjusting your search terms.' : 'Get started by creating your first reservation.'}
                   </p>
@@ -741,6 +877,14 @@ export default function ReservationsPage() {
                                   {reservation.room_number}
                                 </div>
                                 <div className="text-sm text-gray-500 capitalize">{reservation.hotel}</div>
+                                {(reservation.room_group || reservation.room_type) && (
+                                  <div className="text-xs text-gray-400 mt-1">
+                                    {reservation.room_group && reservation.room_type ? 
+                                      `${reservation.room_group} | ${reservation.room_type}` :
+                                      reservation.room_group || reservation.room_type
+                                    }
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </td>
@@ -962,6 +1106,57 @@ export default function ReservationsPage() {
                   )}
                 </div>
                 
+                {/* Room Group Selection */}
+                <div>
+                  <label htmlFor="room_group" className="block text-sm font-medium text-gray-700 mb-1">
+                    Room Group *
+                  </label>
+                  <select
+                    id="room_group"
+                    value={selectedRoomGroup || ''}
+                    onChange={(e) => handleRoomGroupChange(parseInt(e.target.value) || 0)}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                      formErrors.room_id ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Select a room group</option>
+                    {roomGroups.map((group) => (
+                      <option key={group.room_group_id} value={group.room_group_id}>
+                        {group.group_name}
+                        {group.description && ` - ${group.description}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Room Type Selection */}
+                <div>
+                  <label htmlFor="room_type" className="block text-sm font-medium text-gray-700 mb-1">
+                    Room Type *
+                  </label>
+                  <select
+                    id="room_type"
+                    value={selectedRoomType || ''}
+                    onChange={(e) => handleRoomTypeChange(parseInt(e.target.value) || 0)}
+                    disabled={!selectedRoomGroup}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
+                      !selectedRoomGroup ? 'bg-gray-100 cursor-not-allowed' : ''
+                    } ${formErrors.room_id ? 'border-red-500' : 'border-gray-300'}`}
+                  >
+                    <option value="">
+                      {selectedRoomGroup ? 'Select a room type' : 'Select room group first'}
+                    </option>
+                    {availableRoomTypes.map((type) => (
+                      <option key={type.room_type_id} value={type.room_type_id}>
+                        {type.type_name}
+                        {type.description && ` - ${type.description}`}
+                        {type.max_occupancy && ` (Max: ${type.max_occupancy} persons)`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Room Selection */}
                 <div>
                   <label htmlFor="room_id" className="block text-sm font-medium text-gray-700 mb-1">
                     Room *
@@ -970,15 +1165,18 @@ export default function ReservationsPage() {
                     id="room_id"
                     name="room_id"
                     value={formData.room_id}
-                    onChange={handleInputChange}
+                    onChange={(e) => handleRoomChange(parseInt(e.target.value) || 0)}
+                    disabled={!selectedRoomType}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${
-                      formErrors.room_id ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                      !selectedRoomType ? 'bg-gray-100 cursor-not-allowed' : ''
+                    } ${formErrors.room_id ? 'border-red-500' : 'border-gray-300'}`}
                   >
-                    <option value="">Select a room</option>
-                    {rooms.map((room) => (
+                    <option value="">
+                      {selectedRoomType ? 'Select a room' : 'Select room type first'}
+                    </option>
+                    {availableRooms.map((room) => (
                       <option key={room.room_id} value={room.room_id}>
-                        {room.room_number} - {room.hotel} ({room.status}) - Max: {room.max_occupancy || 'N/A'} persons
+                        {room.room_number} - {room.hotel} ({room.status})
                         {room.weekday_price && room.weekend_price ? 
                           ` - Weekdays: $${Number(room.weekday_price).toFixed(2)} | Weekends: $${Number(room.weekend_price).toFixed(2)}` : 
                           ' - Pricing not set'
@@ -990,9 +1188,22 @@ export default function ReservationsPage() {
                     <p className="mt-1 text-sm text-red-600">{formErrors.room_id}</p>
                   )}
                   {formData.room_id && (
-                    <p className="mt-1 text-sm text-gray-500">
-                      Total price will be automatically calculated based on room pricing and stay duration
-                    </p>
+                    <div className="mt-1 text-sm text-gray-500">
+                      <p>Total price will be automatically calculated based on room pricing and stay duration</p>
+                      {(() => {
+                        const selectedRoom = availableRooms.find(room => room.room_id === formData.room_id);
+                        if (selectedRoom && (selectedRoom.group_name || selectedRoom.type_name)) {
+                          return (
+                            <p className="mt-1">
+                              <span className="font-medium">Room Details:</span>
+                              {selectedRoom.group_name && <span className="ml-1">Group: {selectedRoom.group_name}</span>}
+                              {selectedRoom.type_name && <span className="ml-1">Type: {selectedRoom.type_name}</span>}
+                            </p>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
                   )}
                 </div>
 
