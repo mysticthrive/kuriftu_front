@@ -41,6 +41,10 @@ export default function RoomManagementPage() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assigningRoomTypes, setAssigningRoomTypes] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  
+  // Filter states
+  const [roomGroupFilter, setRoomGroupFilter] = useState<number | null>(null);
+  const [roomTypeFilter, setRoomTypeFilter] = useState<number | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -138,10 +142,20 @@ export default function RoomManagementPage() {
     return relationships.filter(rel => rel.room_type_id === roomTypeId);
   };
 
-  const filteredRoomGroups = roomGroups.filter(group =>
-    group.group_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (group.description && group.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredRoomGroups = roomGroups.filter(group => {
+    // Text search filter
+    const matchesSearch = group.group_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (group.description && group.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Room group filter
+    const matchesRoomGroupFilter = !roomGroupFilter || group.room_group_id === roomGroupFilter;
+    
+    // Room type filter - check if this group has the selected room type
+    const matchesRoomTypeFilter = !roomTypeFilter || 
+      relationships.some(rel => rel.room_group_id === group.room_group_id && rel.room_type_id === roomTypeFilter);
+    
+    return matchesSearch && matchesRoomGroupFilter && matchesRoomTypeFilter;
+  });
 
   if (loading) {
     return (
@@ -188,8 +202,10 @@ export default function RoomManagementPage() {
             </div>
 
             <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <div className="flex items-center space-x-4">
-                <div className="flex-1 relative">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Filters</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
                     type="text"
@@ -199,12 +215,65 @@ export default function RoomManagementPage() {
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="text-sm text-gray-600 hover:text-gray-800 underline px-3 py-2"
-                >
-                  Clear Search
-                </button>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Room Group</label>
+                  <select
+                    value={roomGroupFilter || ''}
+                    onChange={(e) => setRoomGroupFilter(Number(e.target.value) || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">All Room Groups</option>
+                    {roomGroups.map(group => (
+                      <option key={group.room_group_id} value={group.room_group_id}>
+                        {group.group_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Room Type</label>
+                  <select
+                    value={roomTypeFilter || ''}
+                    onChange={(e) => setRoomTypeFilter(Number(e.target.value) || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">All Room Types</option>
+                    {roomTypes.map(type => (
+                      <option key={type.room_type_id} value={type.room_type_id}>
+                        {type.type_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="flex items-end">
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setRoomGroupFilter(null);
+                      setRoomTypeFilter(null);
+                    }}
+                    className="w-full px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
+                  >
+                    <span className="mr-2">Clear All</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              {/* Debug info - remove this after testing */}
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
+                <p>Debug Info:</p>
+                <p>Room Groups: {roomGroups.length}</p>
+                <p>Room Types: {roomTypes.length}</p>
+                <p>Search Term: "{searchTerm}"</p>
+                <p>Room Group Filter: {roomGroupFilter || 'None'}</p>
+                <p>Room Type Filter: {roomTypeFilter || 'None'}</p>
+                <p>Filtered Results: {filteredRoomGroups.length}</p>
               </div>
             </div>
 

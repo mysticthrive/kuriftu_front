@@ -30,6 +30,8 @@ import { getRooms, createRoom, updateRoom, deleteRoom, Room, CreateRoomData, get
 import { getRoomGroupRoomTypes } from '@/lib/api/roomGroupRoomTypes';
 import { getRoomPricing, RoomPricing } from '@/lib/api/roomPricing';
 import { getRoomTypeImages, RoomTypeImage } from '@/lib/api/roomTypeImages';
+import { getRoomGroups, RoomGroup } from '@/lib/api/roomGroups';
+import { getRoomTypes, RoomType } from '@/lib/api/roomTypes';
 import Pagination from '@/components/Pagination';
 
 const statusOptions = [
@@ -61,6 +63,8 @@ export default function RoomsPage() {
   const [loadingData, setLoadingData] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [roomGroupFilter, setRoomGroupFilter] = useState<number | null>(null);
+  const [roomTypeFilter, setRoomTypeFilter] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -80,6 +84,8 @@ export default function RoomsPage() {
   const [relationships, setRelationships] = useState<any[]>([]);
   const [roomPricing, setRoomPricing] = useState<RoomPricing[]>([]);
   const [roomImages, setRoomImages] = useState<RoomTypeImage[]>([]);
+  const [roomGroups, setRoomGroups] = useState<RoomGroup[]>([]);
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -89,16 +95,18 @@ export default function RoomsPage() {
 
   useEffect(() => {
     if (user) {
-      fetchRelationships();
+      fetchFilterData();
     }
   }, [user]);
 
-  const fetchRelationships = async () => {
+  const fetchFilterData = async () => {
     try {
-      const [relationshipsRes, pricingRes, imagesRes] = await Promise.all([
+      const [relationshipsRes, pricingRes, imagesRes, groupsRes, typesRes] = await Promise.all([
         getRoomGroupRoomTypes(),
         getRoomPricing(),
-        getRoomTypeImages()
+        getRoomTypeImages(),
+        getRoomGroups(),
+        getRoomTypes()
       ]);
       
       if (relationshipsRes.success && relationshipsRes.data) {
@@ -110,6 +118,12 @@ export default function RoomsPage() {
       if (imagesRes.success && imagesRes.data) {
         setRoomImages(imagesRes.data);
         console.log('Room images loaded:', imagesRes.data.length);
+      }
+      if (groupsRes.success && groupsRes.data) {
+        setRoomGroups(groupsRes.data);
+      }
+      if (typesRes.success && typesRes.data) {
+        setRoomTypes(typesRes.data);
       }
     } catch (error: any) {
       console.error('Error fetching data:', error);
@@ -221,7 +235,15 @@ export default function RoomsPage() {
                          room.group_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = !selectedStatus || room.status === selectedStatus;
     
-    return matchesSearch && matchesStatus;
+    // Room group filter - check if room's relationship matches the selected room group
+    const matchesRoomGroup = !roomGroupFilter || 
+      relationships.some(rel => rel.id === room.room_group_room_type_id && rel.room_group_id === roomGroupFilter);
+    
+    // Room type filter - check if room's relationship matches the selected room type
+    const matchesRoomType = !roomTypeFilter || 
+      relationships.some(rel => rel.id === room.room_group_room_type_id && rel.room_type_id === roomTypeFilter);
+    
+    return matchesSearch && matchesStatus && matchesRoomGroup && matchesRoomType;
   }) || [];
 
   // Pagination logic
@@ -304,6 +326,23 @@ export default function RoomsPage() {
     return pricing?.price || null;
   };
 
+  // Get unique room groups and room types for filters
+  const uniqueRoomGroups = roomGroups
+    .filter(group => group.hotel === selectedHotel)
+    .map(group => ({
+      id: group.room_group_id,
+      name: group.group_name
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const uniqueRoomTypes = roomTypes
+    .filter(type => type.hotel === selectedHotel)
+    .map(type => ({
+      id: type.room_type_id,
+      name: type.type_name
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -350,42 +389,84 @@ export default function RoomsPage() {
 
             {/* Filters */}
             <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Search rooms..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Filters</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input
+                      type="text"
+                      placeholder="Search rooms..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
                 </div>
-                <div className="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
-                  {getCurrentHotel()?.label || 'Select Resort'}
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">All Status</option>
+                    {statusOptions.map(status => (
+                      <option key={status.value} value={status.value}>
+                        {status.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">All Status</option>
-                  {statusOptions.map(status => (
-                    <option key={status.value} value={status.value}>
-                      {status.label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  onClick={() => {
-                    setSearchTerm('');
-                    setSelectedStatus('');
-                  }}
-                  className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Clear Filters
-                </button>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Room Group</label>
+                  <select
+                    value={roomGroupFilter || ''}
+                    onChange={(e) => setRoomGroupFilter(Number(e.target.value) || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">All Room Groups</option>
+                    {uniqueRoomGroups.map(group => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Room Type</label>
+                  <select
+                    value={roomTypeFilter || ''}
+                    onChange={(e) => setRoomTypeFilter(Number(e.target.value) || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">All Room Types</option>
+                    {uniqueRoomTypes.map(type => (
+                      <option key={type.id} value={type.id}>
+                        {type.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="flex items-end">
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSelectedStatus('');
+                      setRoomGroupFilter(null);
+                      setRoomTypeFilter(null);
+                    }}
+                    className="w-full px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Clear All
+                  </button>
+                </div>
               </div>
             </div>
 
