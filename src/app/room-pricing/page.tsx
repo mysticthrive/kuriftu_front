@@ -36,6 +36,8 @@ import {
   CreateRoomPricingData 
 } from '@/lib/api/roomPricing';
 import { getRoomGroupRoomTypes } from '@/lib/api/roomGroupRoomTypes';
+import { getRoomGroups, getRoomGroupsByHotel, RoomGroup } from '@/lib/api/roomGroups';
+import { getRoomTypes, getRoomTypesByHotel, RoomType } from '@/lib/api/roomTypes';
 import { useHotel } from '@/contexts/HotelContext';
 import { useHotelData } from '@/hooks/useHotelData';
 import Pagination from '@/components/Pagination';
@@ -58,6 +60,8 @@ export default function RoomPricingPage() {
   });
   
   const [relationships, setRelationships] = useState<any[]>([]);
+  const [roomGroups, setRoomGroups] = useState<RoomGroup[]>([]);
+  const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRelationship, setSelectedRelationship] = useState<string>('');
@@ -88,10 +92,10 @@ export default function RoomPricingPage() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedHotel) {
       fetchData();
     }
-  }, [user]);
+  }, [user, selectedHotel]);
 
   // Update formData hotel when selectedHotel changes
   useEffect(() => {
@@ -104,10 +108,32 @@ export default function RoomPricingPage() {
   const fetchData = async () => {
     try {
       setLoadingData(true);
-      const relationshipsRes = await getRoomGroupRoomTypes();
+      const [relationshipsRes, groupsRes, typesRes] = await Promise.all([
+        getRoomGroupRoomTypes(),
+        getRoomGroupsByHotel(selectedHotel),
+        getRoomTypesByHotel(selectedHotel)
+      ]);
       
       if (relationshipsRes.success && relationshipsRes.data) {
-        setRelationships(relationshipsRes.data);
+        // Filter relationships to only include those where both room group and room type belong to the selected hotel
+        const filteredRelationships = relationshipsRes.data.filter((rel: any) => {
+          const groupBelongsToHotel = groupsRes.data?.some((group: RoomGroup) => 
+            group.room_group_id === rel.room_group_id && group.hotel === selectedHotel
+          );
+          const typeBelongsToHotel = typesRes.data?.some((type: RoomType) => 
+            type.room_type_id === rel.room_type_id && type.hotel === selectedHotel
+          );
+          return groupBelongsToHotel && typeBelongsToHotel;
+        });
+        setRelationships(filteredRelationships);
+      }
+      
+      if (groupsRes.success && groupsRes.data) {
+        setRoomGroups(groupsRes.data);
+      }
+      
+      if (typesRes.success && typesRes.data) {
+        setRoomTypes(typesRes.data);
       }
     } catch (error: any) {
       console.error('Error fetching data:', error);

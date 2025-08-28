@@ -27,12 +27,16 @@ import {
 } from 'lucide-react';
 import { getRoomTypeImages, deleteRoomTypeImage, setImageAsPrimary, RoomTypeImage, createRoomTypeImageWithFile, CreateRoomTypeImageWithFileData, updateRoomTypeImageWithFile, UpdateRoomTypeImageWithFileData } from '@/lib/api/roomTypeImages';
 import { getRoomGroupRoomTypes } from '@/lib/api/roomGroupRoomTypes';
+import { getRoomGroups, getRoomGroupsByHotel, RoomGroup } from '@/lib/api/roomGroups';
+import { getRoomTypes, getRoomTypesByHotel, RoomType } from '@/lib/api/roomTypes';
+import { useHotel } from '@/contexts/HotelContext';
 import Pagination from '@/components/Pagination';
 
 export default function RoomTypeImagesPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { toggleSidebar } = useSidebar();
+  const { selectedHotel } = useHotel();
   
   const [images, setImages] = useState<RoomTypeImage[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -83,24 +87,49 @@ export default function RoomTypeImagesPage() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedHotel) {
       fetchData();
     }
-  }, [user]);
+  }, [user, selectedHotel]);
 
   const fetchData = async () => {
     try {
       setLoadingData(true);
-      const [imagesRes, relationshipsRes] = await Promise.all([
+      const [imagesRes, relationshipsRes, groupsRes, typesRes] = await Promise.all([
         getRoomTypeImages(),
-        getRoomGroupRoomTypes()
+        getRoomGroupRoomTypes(),
+        getRoomGroupsByHotel(selectedHotel),
+        getRoomTypesByHotel(selectedHotel)
       ]);
       
       if (imagesRes.success && imagesRes.data) {
-        setImages(imagesRes.data);
+        // Filter images to only include those where both room group and room type belong to the selected hotel
+        const filteredImages = imagesRes.data.filter((image: RoomTypeImage) => {
+          const relationship = relationshipsRes.data?.find((rel: any) => rel.id === image.room_group_room_type_id);
+          if (!relationship) return false;
+          
+          const groupBelongsToHotel = groupsRes.data?.some((group: RoomGroup) => 
+            group.room_group_id === relationship.room_group_id && group.hotel === selectedHotel
+          );
+          const typeBelongsToHotel = typesRes.data?.some((type: RoomType) => 
+            type.room_type_id === relationship.room_type_id && type.hotel === selectedHotel
+          );
+          return groupBelongsToHotel && typeBelongsToHotel;
+        });
+        setImages(filteredImages);
       }
       if (relationshipsRes.success && relationshipsRes.data) {
-        setRelationships(relationshipsRes.data);
+        // Filter relationships to only include those where both room group and room type belong to the selected hotel
+        const filteredRelationships = relationshipsRes.data.filter((rel: any) => {
+          const groupBelongsToHotel = groupsRes.data?.some((group: RoomGroup) => 
+            group.room_group_id === rel.room_group_id && group.hotel === selectedHotel
+          );
+          const typeBelongsToHotel = typesRes.data?.some((type: RoomType) => 
+            type.room_type_id === rel.room_type_id && type.hotel === selectedHotel
+          );
+          return groupBelongsToHotel && typeBelongsToHotel;
+        });
+        setRelationships(filteredRelationships);
       }
     } catch (error: any) {
       console.error('Error fetching data:', error);

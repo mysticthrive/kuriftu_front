@@ -20,17 +20,19 @@ import {
   Users,
   Bed
 } from 'lucide-react';
-import { getRoomGroups } from '@/lib/api/roomGroups';
-import { getRoomTypes } from '@/lib/api/roomTypes';
+import { getRoomGroups, getRoomGroupsByHotel } from '@/lib/api/roomGroups';
+import { getRoomTypes, getRoomTypesByHotel } from '@/lib/api/roomTypes';
 import { getRoomGroupRoomTypes, bulkAssignRoomTypes, deleteRoomGroupRoomType } from '@/lib/api/roomGroupRoomTypes';
 import { RoomGroup } from '@/lib/api/roomGroups';
 import { RoomType } from '@/lib/api/roomTypes';
 import { RoomGroupRoomType } from '@/lib/api/roomGroupRoomTypes';
+import { useHotel } from '@/contexts/HotelContext';
 
 export default function RoomManagementPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const { toggleSidebar } = useSidebar();
+  const { selectedHotel } = useHotel();
   
   const [roomGroups, setRoomGroups] = useState<RoomGroup[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
@@ -53,17 +55,17 @@ export default function RoomManagementPage() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    if (user) {
+    if (user && selectedHotel) {
       fetchData();
     }
-  }, [user]);
+  }, [user, selectedHotel]);
 
   const fetchData = async () => {
     try {
       setLoadingData(true);
       const [roomGroupsRes, roomTypesRes, relationshipsRes] = await Promise.all([
-        getRoomGroups(),
-        getRoomTypes(),
+        getRoomGroupsByHotel(selectedHotel),
+        getRoomTypesByHotel(selectedHotel),
         getRoomGroupRoomTypes()
       ]);
       
@@ -74,7 +76,17 @@ export default function RoomManagementPage() {
         setRoomTypes(roomTypesRes.data);
       }
       if (relationshipsRes.success && relationshipsRes.data) {
-        setRelationships(relationshipsRes.data);
+        // Filter relationships to only include those where both room group and room type belong to the selected hotel
+        const filteredRelationships = relationshipsRes.data.filter((rel: any) => {
+          const groupBelongsToHotel = roomGroupsRes.data?.some((group: RoomGroup) => 
+            group.room_group_id === rel.room_group_id && group.hotel === selectedHotel
+          );
+          const typeBelongsToHotel = roomTypesRes.data?.some((type: RoomType) => 
+            type.room_type_id === rel.room_type_id && type.hotel === selectedHotel
+          );
+          return groupBelongsToHotel && typeBelongsToHotel;
+        });
+        setRelationships(filteredRelationships);
       }
     } catch (error: any) {
       console.error('Error fetching data:', error);
